@@ -14,16 +14,231 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analysis_data: {
+        Row: {
+          category: string
+          icon: string | null
+          id: string
+          sort_order: number | null
+          value: number
+          year: string
+        }
+        Insert: {
+          category: string
+          icon?: string | null
+          id?: string
+          sort_order?: number | null
+          value?: number
+          year: string
+        }
+        Update: {
+          category?: string
+          icon?: string | null
+          id?: string
+          sort_order?: number | null
+          value?: number
+          year?: string
+        }
+        Relationships: []
+      }
+      features: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
+      footer_logos: {
+        Row: {
+          id: string
+          image_url: string
+          name: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          id?: string
+          image_url: string
+          name?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          id?: string
+          image_url?: string
+          name?: string | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      programmes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          see_more_url: string | null
+          sort_order: number | null
+          title: string
+          year: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          see_more_url?: string | null
+          sort_order?: number | null
+          title: string
+          year: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          see_more_url?: string | null
+          sort_order?: number | null
+          title?: string
+          year?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          admission_button_text: string | null
+          admission_heading: string | null
+          admission_text: string | null
+          analysis_heading: string | null
+          features_heading: string | null
+          footer_copyright: string | null
+          footer_estd: string | null
+          footer_managed_by: string | null
+          footer_reg: string | null
+          footer_run_by: string | null
+          footer_under: string | null
+          id: string
+          logo_url: string | null
+          programmes_heading: string | null
+          school_name: string
+          tagline: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admission_button_text?: string | null
+          admission_heading?: string | null
+          admission_text?: string | null
+          analysis_heading?: string | null
+          features_heading?: string | null
+          footer_copyright?: string | null
+          footer_estd?: string | null
+          footer_managed_by?: string | null
+          footer_reg?: string | null
+          footer_run_by?: string | null
+          footer_under?: string | null
+          id?: string
+          logo_url?: string | null
+          programmes_heading?: string | null
+          school_name?: string
+          tagline?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admission_button_text?: string | null
+          admission_heading?: string | null
+          admission_text?: string | null
+          analysis_heading?: string | null
+          features_heading?: string | null
+          footer_copyright?: string | null
+          footer_estd?: string | null
+          footer_managed_by?: string | null
+          footer_reg?: string | null
+          footer_run_by?: string | null
+          footer_under?: string | null
+          id?: string
+          logo_url?: string | null
+          programmes_heading?: string | null
+          school_name?: string
+          tagline?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      slider_images: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          heading: string | null
+          id: string
+          image_url: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          heading?: string | null
+          id?: string
+          image_url: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          heading?: string | null
+          id?: string
+          image_url?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +365,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
