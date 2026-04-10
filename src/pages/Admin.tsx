@@ -88,7 +88,7 @@ const SiteSettingsTab = () => {
 
   const handleSave = async () => {
     if (!settings?.id) return;
-    const { error } = await supabase.from("site_settings").update(form).eq("id", settings.id);
+    const { error } = await supabase.from("site_settings").update(form as any).eq("id", settings.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Settings saved!");
     queryClient.invalidateQueries({ queryKey: ["site_settings"] });
