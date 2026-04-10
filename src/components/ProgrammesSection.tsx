@@ -1,0 +1,78 @@
+import { useState } from "react";
+import { useSiteSettings, useProgrammes } from "@/hooks/useSiteData";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ImageIcon } from "lucide-react";
+
+const generateYears = () => {
+  const years = [];
+  for (let y = 2025; y <= 2035; y++) {
+    years.push(`${y}-${String(y + 1).slice(2)}`);
+  }
+  return years;
+};
+
+const ProgrammesSection = () => {
+  const { data: settings } = useSiteSettings();
+  const allYears = generateYears();
+  const [selectedYear, setSelectedYear] = useState("2025-26");
+  const { data: programmes } = useProgrammes(selectedYear);
+
+  return (
+    <section className="py-16 bg-primary/5">
+      <div className="container mx-auto px-4 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-primary mb-2">
+          {settings?.programmes_heading || "PROGRAMMES"}
+        </h2>
+        <div className="flex justify-center mb-10">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {allYears.map((y) => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {(programmes || []).map((prog) => (
+            <Card key={prog.id} className="overflow-hidden hover:shadow-lg transition-shadow text-left">
+              {prog.image_url ? (
+                <img src={prog.image_url} alt={prog.title} className="w-full h-48 object-cover" />
+              ) : (
+                <div className="w-full h-48 bg-muted flex items-center justify-center">
+                  <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                </div>
+              )}
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">{prog.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {prog.description && (
+                  <CardDescription className="mb-3">{prog.description}</CardDescription>
+                )}
+                {prog.see_more_url && (
+                  <Button variant="link" className="p-0" asChild>
+                    <a href={prog.see_more_url} target="_blank" rel="noopener noreferrer">
+                      See more →
+                    </a>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+          {(!programmes || programmes.length === 0) && (
+            <div className="col-span-full text-muted-foreground py-8">
+              No programmes available for {selectedYear}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default ProgrammesSection;
