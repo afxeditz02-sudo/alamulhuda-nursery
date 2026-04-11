@@ -92,6 +92,9 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_published: boolean | null
+          media: Json | null
+          scheduled_at: string | null
           see_more_url: string | null
           sort_order: number | null
           title: string
@@ -102,6 +105,9 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_published?: boolean | null
+          media?: Json | null
+          scheduled_at?: string | null
           see_more_url?: string | null
           sort_order?: number | null
           title: string
@@ -112,6 +118,9 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_published?: boolean | null
+          media?: Json | null
+          scheduled_at?: string | null
           see_more_url?: string | null
           sort_order?: number | null
           title?: string
