@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Save, Home } from "lucide-react";
+import ProgrammesTab from "@/components/admin/ProgrammesTab";
 
 const generateYears = () => {
   const years = [];
@@ -315,80 +316,7 @@ const AnalysisTab = () => {
   );
 };
 
-const ProgrammesTab = () => {
-  const allYears = generateYears();
-  const [selectedYear, setSelectedYear] = useState("2025-26");
-  const { data: programmes } = useProgrammes(selectedYear);
-  const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [seeMore, setSeeMore] = useState("");
-
-  const addProgramme = async (e?: React.ChangeEvent<HTMLInputElement>) => {
-    if (!title.trim()) { toast.error("Title is required"); return; }
-    let imageUrl = null;
-    if (e?.target.files?.[0]) {
-      const file = e.target.files[0];
-      const path = `programmes/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("site-images").upload(path, file);
-      if (uploadError) { toast.error(uploadError.message); return; }
-      const { data: { publicUrl } } = supabase.storage.from("site-images").getPublicUrl(path);
-      imageUrl = publicUrl;
-    }
-    const { error } = await supabase.from("programmes").insert({
-      year: selectedYear, title, description: desc || null,
-      image_url: imageUrl, see_more_url: seeMore || null,
-      sort_order: (programmes?.length || 0) + 1,
-    });
-    if (error) { toast.error(error.message); return; }
-    setTitle(""); setDesc(""); setSeeMore("");
-    toast.success("Programme added!");
-    queryClient.invalidateQueries({ queryKey: ["programmes", selectedYear] });
-  };
-
-  const deleteProgramme = async (id: string) => {
-    await supabase.from("programmes").delete().eq("id", id);
-    toast.success("Deleted");
-    queryClient.invalidateQueries({ queryKey: ["programmes", selectedYear] });
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Programmes</CardTitle>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {(programmes || []).map((p) => (
-          <div key={p.id} className="flex items-start gap-2 p-3 border rounded">
-            {p.image_url && <img src={p.image_url} alt="" className="w-16 h-16 object-cover rounded" />}
-            <div className="flex-1">
-              <p className="font-medium">{p.title}</p>
-              {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
-            </div>
-            <Button variant="destructive" size="icon" onClick={() => deleteProgramme(p.id)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-        <div className="border-t pt-4 space-y-2">
-          <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Textarea placeholder="Description (optional)" value={desc} onChange={(e) => setDesc(e.target.value)} />
-          <Input placeholder="See More URL (optional)" value={seeMore} onChange={(e) => setSeeMore(e.target.value)} />
-          <Input type="file" accept="image/*" onChange={(e) => addProgramme(e)} />
-          <Button onClick={() => addProgramme()}><Plus className="h-4 w-4 mr-1" /> Add (no image)</Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+// ProgrammesTab moved to src/components/admin/ProgrammesTab.tsx
 
 const FooterLogosTab = () => {
   const { data: logos } = useFooterLogos();
