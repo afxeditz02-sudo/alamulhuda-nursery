@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Save, Home } from "lucide-react";
 import ProgrammesTab from "@/components/admin/ProgrammesTab";
+import TabsPagesTab from "@/components/admin/TabsPagesTab";
 
 const generateYears = () => {
   const years = [];
@@ -61,6 +62,7 @@ const Admin = () => {
             <TabsTrigger value="analysis">Analysis</TabsTrigger>
             <TabsTrigger value="programmes">Programmes</TabsTrigger>
             <TabsTrigger value="footer">Footer Logos</TabsTrigger>
+            <TabsTrigger value="tabs-pages">Tabs/Pages</TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings"><SiteSettingsTab /></TabsContent>
@@ -69,6 +71,7 @@ const Admin = () => {
           <TabsContent value="analysis"><AnalysisTab /></TabsContent>
           <TabsContent value="programmes"><ProgrammesTab /></TabsContent>
           <TabsContent value="footer"><FooterLogosTab /></TabsContent>
+          <TabsContent value="tabs-pages"><TabsPagesTab /></TabsContent>
         </Tabs>
       </div>
     </div>
