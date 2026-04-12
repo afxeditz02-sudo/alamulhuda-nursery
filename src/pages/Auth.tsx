@@ -1,13 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { GraduationCap } from "lucide-react";
+import { toast } from "sonner";
 
 const Auth = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && user && isAdmin) {
@@ -19,6 +27,48 @@ const Auth = () => {
     await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/auth",
     });
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      toast.error("Email and password are required");
+      return;
+    }
+    if (mode === "signup" && !fullName.trim()) {
+      toast.error("Full name is required");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: { full_name: fullName.trim() },
+          },
+        });
+        if (error) throw error;
+        toast.success("Account created! Check your email to verify.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
+        toast.success("Signed in!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Authentication failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -47,14 +97,57 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background">
-      <div className="bg-card border rounded-2xl shadow-xl p-8 max-w-sm w-full text-center">
-        <GraduationCap className="h-16 w-16 text-primary mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Admin Login</h1>
-        <p className="text-muted-foreground mb-6">
-          Sign in to manage school website content
-        </p>
-        <Button onClick={handleGoogleSignIn} className="w-full gap-2" size="lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background px-4">
+      <div className="bg-card border rounded-2xl shadow-xl p-8 max-w-sm w-full">
+        <div className="text-center mb-6">
+          <GraduationCap className="h-16 w-16 text-primary mx-auto mb-4" />
+          <h1 className="text-2xl font-bold">{mode === "login" ? "Sign In" : "Create Account"}</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {mode === "login" ? "Sign in to manage school content" : "Register a new account"}
+          </p>
+        </div>
+
+        <form onSubmit={handleEmailAuth} className="space-y-3 mb-4">
+          {mode === "signup" && (
+            <Input
+              placeholder="Full Name *"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              maxLength={100}
+            />
+          )}
+          <Input
+            type="email"
+            placeholder="Email *"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            maxLength={255}
+          />
+          <Input
+            type="password"
+            placeholder="Password *"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? "Please wait..." : mode === "login" ? "Sign In" : "Sign Up"}
+          </Button>
+        </form>
+
+        <div className="relative mb-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+
+        <Button onClick={handleGoogleSignIn} variant="outline" className="w-full gap-2" size="lg">
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
             <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -63,6 +156,18 @@ const Auth = () => {
           </svg>
           Sign in with Google
         </Button>
+
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          {mode === "login" ? (
+            <>Don't have an account?{" "}
+              <button onClick={() => setMode("signup")} className="text-primary font-medium hover:underline">Sign Up</button>
+            </>
+          ) : (
+            <>Already have an account?{" "}
+              <button onClick={() => setMode("login")} className="text-primary font-medium hover:underline">Sign In</button>
+            </>
+          )}
+        </p>
       </div>
     </div>
   );
