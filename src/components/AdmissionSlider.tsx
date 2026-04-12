@@ -25,7 +25,7 @@ const AdmissionSlider = () => {
   }, [next, hasSlides]);
 
   return (
-    <section className="py-16 bg-primary/5">
+    <section id="admission" className="py-16 bg-primary/5">
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-primary mb-8">
           {settings?.admission_heading || "ADMISSION"}
