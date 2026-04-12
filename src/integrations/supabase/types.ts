@@ -86,6 +86,33 @@ export type Database = {
         }
         Relationships: []
       }
+      nav_menu_items: {
+        Row: {
+          created_at: string | null
+          href: string
+          id: string
+          is_visible: boolean | null
+          label: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          href: string
+          id?: string
+          is_visible?: boolean | null
+          label: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          href?: string
+          id?: string
+          is_visible?: boolean | null
+          label?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       programmes: {
         Row: {
           created_at: string | null

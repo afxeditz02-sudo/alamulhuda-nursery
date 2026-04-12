@@ -5,7 +5,7 @@ const Footer = () => {
   const { data: logos } = useFooterLogos();
 
   return (
-    <footer className="bg-primary text-primary-foreground py-10">
+    <footer id="footer" className="bg-primary text-primary-foreground py-10">
       <div className="container mx-auto px-4 text-center space-y-4">
         <p className="text-lg font-bold">
           {settings?.footer_copyright || "© ALAMUL HUDA ENGLISH MEDIUM NURSERY SCHOOL, Vettupara"}

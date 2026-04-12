@@ -6,7 +6,7 @@ const FeaturesSection = () => {
   const { data: features } = useFeatures();
 
   return (
-    <section className="py-16 bg-background">
+    <section id="features" className="py-16 bg-background">
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-primary mb-2">
           {settings?.features_heading || "ALAMUL HUDA"}

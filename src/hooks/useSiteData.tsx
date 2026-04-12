@@ -82,3 +82,13 @@ export const useFooterLogos = () =>
       return data;
     },
   });
+
+export const useNavMenuItems = () =>
+  useQuery({
+    queryKey: ["nav_menu_items"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("nav_menu_items").select("*").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
