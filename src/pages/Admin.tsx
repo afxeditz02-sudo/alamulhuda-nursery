@@ -116,6 +116,7 @@ const Admin = () => {
             <TabsTrigger value="programmes">Programmes</TabsTrigger>
             <TabsTrigger value="footer">Footer Logos</TabsTrigger>
             <TabsTrigger value="tabs-pages">Tabs/Pages</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings"><SiteSettingsTab /></TabsContent>
@@ -125,6 +126,7 @@ const Admin = () => {
           <TabsContent value="programmes"><ProgrammesTab /></TabsContent>
           <TabsContent value="footer"><FooterLogosTab /></TabsContent>
           <TabsContent value="tabs-pages"><TabsPagesTab /></TabsContent>
+          <TabsContent value="users"><UsersTab /></TabsContent>
         </Tabs>
       </div>
     </div>
