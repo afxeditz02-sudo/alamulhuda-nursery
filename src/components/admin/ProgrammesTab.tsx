@@ -194,7 +194,6 @@ const ProgrammesTab = () => {
         {primaryYear && (
           <p className="text-xs text-muted-foreground">Primary year (shown first to visitors): <strong>{primaryYear}</strong></p>
         )}
-        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {(programmes || []).map((p) => {
