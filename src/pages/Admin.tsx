@@ -14,6 +14,15 @@ import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Save, Home } from "lucide-react";
 import ProgrammesTab from "@/components/admin/ProgrammesTab";
 import TabsPagesTab from "@/components/admin/TabsPagesTab";
+import UsersTab from "@/components/admin/UsersTab";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const generateYears = () => {
   const years = [];
