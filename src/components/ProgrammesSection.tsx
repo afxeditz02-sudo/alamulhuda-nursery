@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSiteSettings, useProgrammes } from "@/hooks/useSiteData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,8 +18,15 @@ type MediaItem = { url: string; type: "image" | "video" | "file"; name: string }
 const ProgrammesSection = () => {
   const { data: settings } = useSiteSettings();
   const allYears = generateYears();
-  const [selectedYear, setSelectedYear] = useState("2025-26");
+  const primaryYear = (settings as any)?.primary_programmes_year || "2025-26";
+  const [selectedYear, setSelectedYear] = useState(primaryYear);
   const { data: programmes } = useProgrammes(selectedYear);
+
+  useEffect(() => {
+    if ((settings as any)?.primary_programmes_year) {
+      setSelectedYear((settings as any).primary_programmes_year);
+    }
+  }, [(settings as any)?.primary_programmes_year]);
 
   const now = new Date();
   const visibleProgrammes = (programmes || []).filter((p) => {

@@ -307,10 +307,23 @@ const AnalysisTab = () => {
   const allYears = generateYears();
   const [selectedYear, setSelectedYear] = useState("2025-26");
   const { data: analysisData } = useAnalysisData(selectedYear);
+  const { data: settings } = useSiteSettings();
   const queryClient = useQueryClient();
   const [newCat, setNewCat] = useState("");
   const [newVal, setNewVal] = useState("");
   const [newIcon, setNewIcon] = useState("users");
+
+  const primaryYear = (settings as any)?.primary_analysis_year || "2025-26";
+
+  const setPrimaryYear = async () => {
+    if (!settings?.id) return;
+    const { error } = await supabase.from("site_settings").update({
+      primary_analysis_year: selectedYear,
+    } as any).eq("id", settings.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Primary year set to ${selectedYear}`);
+    queryClient.invalidateQueries({ queryKey: ["site_settings"] });
+  };
 
   const addData = async () => {
     if (!newCat.trim()) return;
@@ -333,15 +346,28 @@ const AnalysisTab = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle>Analysis Data</CardTitle>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button
+              variant={selectedYear === primaryYear ? "secondary" : "outline"}
+              size="sm"
+              onClick={setPrimaryYear}
+              disabled={selectedYear === primaryYear}
+            >
+              {selectedYear === primaryYear ? "★ Primary" : "Set Primary"}
+            </Button>
+          </div>
         </div>
+        {primaryYear && (
+          <p className="text-xs text-muted-foreground">Primary year (shown first to visitors): <strong>{primaryYear}</strong></p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {(analysisData || []).map((d) => (

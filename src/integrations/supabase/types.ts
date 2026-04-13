@@ -203,6 +203,8 @@ export type Database = {
           footer_under: string | null
           id: string
           logo_url: string | null
+          primary_analysis_year: string | null
+          primary_programmes_year: string | null
           programmes_heading: string | null
           school_name: string
           tagline: string | null
@@ -222,6 +224,8 @@ export type Database = {
           footer_under?: string | null
           id?: string
           logo_url?: string | null
+          primary_analysis_year?: string | null
+          primary_programmes_year?: string | null
           programmes_heading?: string | null
           school_name?: string
           tagline?: string | null
@@ -241,6 +245,8 @@ export type Database = {
           footer_under?: string | null
           id?: string
           logo_url?: string | null
+          primary_analysis_year?: string | null
+          primary_programmes_year?: string | null
           programmes_heading?: string | null
           school_name?: string
           tagline?: string | null
