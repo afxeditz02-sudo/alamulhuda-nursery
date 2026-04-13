@@ -57,8 +57,15 @@ const AnalysisSection = () => {
   const { data: settings } = useSiteSettings();
   const { data: dbYears } = useAnalysisYears();
   const allYears = generateYears();
-  const [selectedYear, setSelectedYear] = useState("2025-26");
+  const primaryYear = (settings as any)?.primary_analysis_year || "2025-26";
+  const [selectedYear, setSelectedYear] = useState(primaryYear);
   const { data: analysisData } = useAnalysisData(selectedYear);
+
+  useEffect(() => {
+    if ((settings as any)?.primary_analysis_year) {
+      setSelectedYear((settings as any).primary_analysis_year);
+    }
+  }, [(settings as any)?.primary_analysis_year]);
 
   return (
     <section id="analysis" className="py-16 bg-background">

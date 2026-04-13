@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProgrammes } from "@/hooks/useSiteData";
+import { useProgrammes, useSiteSettings } from "@/hooks/useSiteData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +25,20 @@ const ProgrammesTab = () => {
   const allYears = generateYears();
   const [selectedYear, setSelectedYear] = useState("2025-26");
   const { data: programmes } = useProgrammes(selectedYear);
+  const { data: settings } = useSiteSettings();
   const queryClient = useQueryClient();
+
+  const primaryYear = (settings as any)?.primary_programmes_year || "2025-26";
+
+  const setPrimaryYear = async () => {
+    if (!settings?.id) return;
+    const { error } = await supabase.from("site_settings").update({
+      primary_programmes_year: selectedYear,
+    } as any).eq("id", settings.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Primary year set to ${selectedYear}`);
+    queryClient.invalidateQueries({ queryKey: ["site_settings"] });
+  };
 
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
@@ -159,14 +172,28 @@ const ProgrammesTab = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle>Programmes</CardTitle>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button
+              variant={selectedYear === primaryYear ? "secondary" : "outline"}
+              size="sm"
+              onClick={setPrimaryYear}
+              disabled={selectedYear === primaryYear}
+            >
+              {selectedYear === primaryYear ? "★ Primary" : "Set Primary"}
+            </Button>
+          </div>
+        </div>
+        {primaryYear && (
+          <p className="text-xs text-muted-foreground">Primary year (shown first to visitors): <strong>{primaryYear}</strong></p>
+        )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
