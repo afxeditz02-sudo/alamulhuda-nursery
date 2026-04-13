@@ -9,17 +9,32 @@ import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
 const Auth = () => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isRemoved, setIsRemoved] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(false);
 
   useEffect(() => {
     if (!loading && user && isAdmin) {
       navigate("/admin");
+    }
+    if (!loading && user && !isAdmin) {
+      // Check if user is removed
+      setCheckingProfile(true);
+      supabase
+        .from("profiles")
+        .select("is_removed")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          setIsRemoved(!!data?.is_removed);
+          setCheckingProfile(false);
+        });
     }
   }, [user, isAdmin, loading, navigate]);
 
@@ -71,7 +86,12 @@ const Auth = () => {
     }
   };
 
-  if (loading) {
+  const handleSignOutAndRetry = async () => {
+    await signOut();
+    setIsRemoved(false);
+  };
+
+  if (loading || checkingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -79,18 +99,47 @@ const Auth = () => {
     );
   }
 
+  // Removed user message
+  if (user && isRemoved) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="text-center p-8 max-w-md">
+          <GraduationCap className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-foreground mb-2">Access Removed</h1>
+          <p className="text-muted-foreground mb-6">
+            You are removed by Admin — if you want to enter, sign in with another account and wait for admin approval.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button onClick={handleSignOutAndRetry}>
+              Sign Out & Try Another Account
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Go to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Non-admin user (not removed, just no admin role)
   if (user && !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="text-center p-8 max-w-md">
           <GraduationCap className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
-          <p className="text-muted-foreground mb-4">
-            You are signed in but do not have admin privileges. Contact the administrator.
+          <h1 className="text-2xl font-bold text-foreground mb-2">Waiting for Approval</h1>
+          <p className="text-muted-foreground mb-6">
+            You are signed in but do not have admin privileges yet. Please wait for admin approval or try another account.
           </p>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            Go to Home
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button onClick={handleSignOutAndRetry}>
+              Sign Out & Try Another Account
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Go to Home
+            </Button>
+          </div>
         </div>
       </div>
     );
