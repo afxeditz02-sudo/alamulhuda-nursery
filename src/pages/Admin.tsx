@@ -34,15 +34,59 @@ const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [removedPopup, setRemovedPopup] = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) navigate("/auth");
+    if (!loading && !user) {
+      navigate("/auth");
+      return;
+    }
+    if (!loading && user) {
+      // Check if user is removed
+      supabase
+        .from("profiles")
+        .select("is_removed")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.is_removed) {
+            setRemovedPopup(true);
+          } else if (!isAdmin) {
+            navigate("/auth");
+          }
+        });
+    }
   }, [user, isAdmin, loading, navigate]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (removedPopup) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <AlertDialog open={true}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Access Revoked</AlertDialogTitle>
+              <AlertDialogDescription>
+                You are removed by Admin — if you want to enter, sign in and wait for admin approval.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogAction
+              onClick={async () => {
+                await signOut();
+                navigate("/auth");
+              }}
+            >
+              Sign Out & Go to Sign In
+            </AlertDialogAction>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
