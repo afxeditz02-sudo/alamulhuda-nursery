@@ -119,6 +119,8 @@ export type Database = {
           created_at: string | null
           full_name: string
           id: string
+          is_removed: boolean
+          removed_at: string | null
           updated_at: string | null
           user_id: string
         }
@@ -127,6 +129,8 @@ export type Database = {
           created_at?: string | null
           full_name?: string
           id?: string
+          is_removed?: boolean
+          removed_at?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -135,6 +139,8 @@ export type Database = {
           created_at?: string | null
           full_name?: string
           id?: string
+          is_removed?: boolean
+          removed_at?: string | null
           updated_at?: string | null
           user_id?: string
         }

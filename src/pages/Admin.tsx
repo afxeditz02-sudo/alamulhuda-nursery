@@ -14,6 +14,15 @@ import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Save, Home } from "lucide-react";
 import ProgrammesTab from "@/components/admin/ProgrammesTab";
 import TabsPagesTab from "@/components/admin/TabsPagesTab";
+import UsersTab from "@/components/admin/UsersTab";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const generateYears = () => {
   const years = [];
@@ -25,15 +34,59 @@ const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [removedPopup, setRemovedPopup] = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) navigate("/auth");
+    if (!loading && !user) {
+      navigate("/auth");
+      return;
+    }
+    if (!loading && user) {
+      // Check if user is removed
+      supabase
+        .from("profiles")
+        .select("is_removed")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.is_removed) {
+            setRemovedPopup(true);
+          } else if (!isAdmin) {
+            navigate("/auth");
+          }
+        });
+    }
   }, [user, isAdmin, loading, navigate]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (removedPopup) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <AlertDialog open={true}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Access Revoked</AlertDialogTitle>
+              <AlertDialogDescription>
+                You are removed by Admin — if you want to enter, sign in and wait for admin approval.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogAction
+              onClick={async () => {
+                await signOut();
+                navigate("/auth");
+              }}
+            >
+              Sign Out & Go to Sign In
+            </AlertDialogAction>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -63,6 +116,7 @@ const Admin = () => {
             <TabsTrigger value="programmes">Programmes</TabsTrigger>
             <TabsTrigger value="footer">Footer Logos</TabsTrigger>
             <TabsTrigger value="tabs-pages">Tabs/Pages</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings"><SiteSettingsTab /></TabsContent>
@@ -72,6 +126,7 @@ const Admin = () => {
           <TabsContent value="programmes"><ProgrammesTab /></TabsContent>
           <TabsContent value="footer"><FooterLogosTab /></TabsContent>
           <TabsContent value="tabs-pages"><TabsPagesTab /></TabsContent>
+          <TabsContent value="users"><UsersTab /></TabsContent>
         </Tabs>
       </div>
     </div>
