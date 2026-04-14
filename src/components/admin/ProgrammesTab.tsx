@@ -284,7 +284,7 @@ const ProgrammesTab = () => {
                       <Button variant="outline" size="sm" asChild>
                         <span><Upload className="h-3 w-3 mr-1" /> Add Files</span>
                       </Button>
-                      <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden"
+                      <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
                         onChange={(e) => addMediaToExisting(p.id, e.target.files, media)} />
                     </label>
                   )}
@@ -292,7 +292,7 @@ const ProgrammesTab = () => {
                     <Button variant="outline" size="sm" asChild>
                       <span><Replace className="h-3 w-3 mr-1" /> Replace All</span>
                     </Button>
-                    <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden"
+                    <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
                       onChange={(e) => replaceMedia(p.id, e.target.files, media)} />
                   </label>
                 </div>
@@ -320,7 +320,7 @@ const ProgrammesTab = () => {
 
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Media (images, videos, files — max {MAX_MEDIA})</label>
-            <Input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
+            <Input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm"
               onChange={(e) => {
                 const files = e.target.files ? Array.from(e.target.files) : [];
                 if (files.length > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files`); return; }
