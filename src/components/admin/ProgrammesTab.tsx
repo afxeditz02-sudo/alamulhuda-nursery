@@ -55,14 +55,34 @@ const ProgrammesTab = () => {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["programmes", selectedYear] });
 
+  const getFileType = (file: File): "image" | "video" | "file" => {
+    if (file.type.startsWith("image/")) return "image";
+    if (file.type.startsWith("video/")) return "video";
+    // Fallback: check extension for mobile devices that may not set MIME type
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "heic"].includes(ext)) return "image";
+    if (["mp4", "mov", "avi", "mkv", "webm", "3gp", "m4v", "wmv"].includes(ext)) return "video";
+    return "file";
+  };
+
   const uploadFiles = async (files: File[]): Promise<MediaItem[]> => {
     const items: MediaItem[] = [];
     for (const file of files) {
-      const path = `programmes/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("site-images").upload(path, file);
-      if (error) { toast.error(`Upload failed: ${file.name}`); continue; }
+      // Sanitize filename: remove special chars
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `programmes/${Date.now()}-${safeName}`;
+      toast.info(`Uploading ${file.name}...`);
+      const { error } = await supabase.storage.from("site-images").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) {
+        console.error("Upload error:", error);
+        toast.error(`Upload failed: ${file.name} — ${error.message}`);
+        continue;
+      }
       const { data: { publicUrl } } = supabase.storage.from("site-images").getPublicUrl(path);
-      const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "file";
+      const type = getFileType(file);
       items.push({ url: publicUrl, type, name: file.name });
     }
     return items;
@@ -264,7 +284,7 @@ const ProgrammesTab = () => {
                       <Button variant="outline" size="sm" asChild>
                         <span><Upload className="h-3 w-3 mr-1" /> Add Files</span>
                       </Button>
-                      <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden"
+                      <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
                         onChange={(e) => addMediaToExisting(p.id, e.target.files, media)} />
                     </label>
                   )}
@@ -272,7 +292,7 @@ const ProgrammesTab = () => {
                     <Button variant="outline" size="sm" asChild>
                       <span><Replace className="h-3 w-3 mr-1" /> Replace All</span>
                     </Button>
-                    <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden"
+                    <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
                       onChange={(e) => replaceMedia(p.id, e.target.files, media)} />
                   </label>
                 </div>
@@ -300,7 +320,7 @@ const ProgrammesTab = () => {
 
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Media (images, videos, files — max {MAX_MEDIA})</label>
-            <Input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
+            <Input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm"
               onChange={(e) => {
                 const files = e.target.files ? Array.from(e.target.files) : [];
                 if (files.length > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files`); return; }
