@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSiteSettings, useProgrammes } from "@/hooks/useSiteData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, FileText, Film } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { FileText } from "lucide-react";
+import Autoplay from "embla-carousel-autoplay";
 
 const generateYears = () => {
   const years = [];
@@ -14,6 +16,32 @@ const generateYears = () => {
 };
 
 type MediaItem = { url: string; type: "image" | "video" | "file"; name: string };
+
+const MediaSlide = ({ item }: { item: MediaItem }) => {
+  if (item.type === "image") {
+    return (
+      <img
+        src={item.url}
+        alt={item.name}
+        className="w-full h-auto rounded object-contain"
+        loading="lazy"
+      />
+    );
+  }
+  if (item.type === "video") {
+    return (
+      <video
+        controls
+        preload="metadata"
+        className="w-full h-auto rounded"
+        style={{ maxHeight: "500px" }}
+      >
+        <source src={item.url} />
+      </video>
+    );
+  }
+  return null;
+};
 
 const ProgrammesSection = () => {
   const { data: settings } = useSiteSettings();
@@ -55,17 +83,38 @@ const ProgrammesSection = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {visibleProgrammes.map((prog) => {
-            const media: MediaItem[] = Array.isArray(prog.media) ? (prog.media as any) : [];
+            const allMedia: MediaItem[] = Array.isArray(prog.media) ? (prog.media as any) : [];
+            const visualMedia = allMedia.filter(m => m.type === "image" || m.type === "video");
+            const fileMedia = allMedia.filter(m => m.type === "file");
+            const hasVisualMedia = visualMedia.length > 0;
 
             return (
               <Card key={prog.id} className="overflow-hidden hover:shadow-lg transition-shadow text-left">
-                {prog.image_url ? (
-                  <img src={prog.image_url} alt={prog.title} className="w-full h-48 object-cover" />
-                ) : (
-                  <div className="w-full h-48 bg-muted flex items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                  </div>
+                {/* Media carousel or single media */}
+                {hasVisualMedia && (
+                  visualMedia.length === 1 ? (
+                    <div className="w-full">
+                      <MediaSlide item={visualMedia[0]} />
+                    </div>
+                  ) : (
+                    <Carousel
+                      opts={{ loop: true }}
+                      plugins={[Autoplay({ delay: 4000, stopOnInteraction: true })]}
+                      className="w-full"
+                    >
+                      <CarouselContent className="ml-0">
+                        {visualMedia.map((m, i) => (
+                          <CarouselItem key={i} className="pl-0">
+                            <MediaSlide item={m} />
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious className="left-2" />
+                      <CarouselNext className="right-2" />
+                    </Carousel>
+                  )
                 )}
+
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">{prog.title}</CardTitle>
                 </CardHeader>
@@ -73,24 +122,18 @@ const ProgrammesSection = () => {
                   {prog.description && (
                     <CardDescription className="mb-3">{prog.description}</CardDescription>
                   )}
-                  {/* Media files */}
-                  {media.length > 0 && (
+                  {/* File attachments */}
+                  {fileMedia.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {media.filter(m => m.type !== "image").map((m, i) => (
+                      {fileMedia.map((m, i) => (
                         <a key={i} href={m.url} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs border rounded px-2 py-1 hover:bg-muted transition">
-                          {m.type === "video" ? <Film className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                          <FileText className="h-3 w-3" />
                           {m.name}
                         </a>
                       ))}
                     </div>
                   )}
-                  {/* Inline videos */}
-                  {media.filter(m => m.type === "video").map((m, i) => (
-                    <video key={i} controls className="w-full rounded mb-2" preload="metadata">
-                      <source src={m.url} />
-                    </video>
-                  ))}
                   {prog.see_more_url && (
                     <Button variant="link" className="p-0" asChild>
                       <a href={prog.see_more_url} target="_blank" rel="noopener noreferrer">
