@@ -47,8 +47,13 @@ const Admin = () => {
         .from("profiles")
         .select("is_removed")
         .eq("user_id", user.id)
-        .single()
-        .then(({ data }) => {
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Profile check error:", error);
+            if (!isAdmin) navigate("/auth");
+            return;
+          }
           if (data?.is_removed) {
             setRemovedPopup(true);
           } else if (!isAdmin) {
