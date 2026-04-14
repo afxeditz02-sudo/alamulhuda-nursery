@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { LogOut, Plus, Trash2, Save, Home } from "lucide-react";
 import ProgrammesTab from "@/components/admin/ProgrammesTab";
+import BannersTab from "@/components/admin/BannersTab";
 import TabsPagesTab from "@/components/admin/TabsPagesTab";
 import UsersTab from "@/components/admin/UsersTab";
 import {
@@ -116,6 +117,7 @@ const Admin = () => {
           <TabsList className="flex flex-wrap h-auto gap-1 mb-6">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
+            <TabsTrigger value="banners">Banners</TabsTrigger>
             <TabsTrigger value="slider">Slider</TabsTrigger>
             <TabsTrigger value="analysis">Analysis</TabsTrigger>
             <TabsTrigger value="programmes">Programmes</TabsTrigger>
@@ -126,6 +128,7 @@ const Admin = () => {
 
           <TabsContent value="settings"><SiteSettingsTab /></TabsContent>
           <TabsContent value="features"><FeaturesTab /></TabsContent>
+          <TabsContent value="banners"><BannersTab /></TabsContent>
           <TabsContent value="slider"><SliderTab /></TabsContent>
           <TabsContent value="analysis"><AnalysisTab /></TabsContent>
           <TabsContent value="programmes"><ProgrammesTab /></TabsContent>
