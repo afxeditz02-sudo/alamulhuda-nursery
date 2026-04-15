@@ -16,6 +16,7 @@ import ProgrammesTab from "@/components/admin/ProgrammesTab";
 import BannersTab from "@/components/admin/BannersTab";
 import TabsPagesTab from "@/components/admin/TabsPagesTab";
 import UsersTab from "@/components/admin/UsersTab";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +44,6 @@ const Admin = () => {
       return;
     }
     if (!loading && user) {
-      // Check if user is removed
       supabase
         .from("profiles")
         .select("is_removed")
@@ -63,6 +63,17 @@ const Admin = () => {
         });
     }
   }, [user, isAdmin, loading, navigate]);
+
+  const handleSignOut = async () => {
+    if (user) {
+      // Delete profile on sign out so user is removed from the list
+      await supabase.from("profiles").delete().eq("user_id", user.id);
+      // Also remove any roles
+      await supabase.from("user_roles").delete().eq("user_id", user.id);
+    }
+    await signOut();
+    navigate("/");
+  };
 
   if (loading) {
     return (
@@ -107,7 +118,7 @@ const Admin = () => {
           <Button variant="secondary" size="sm" onClick={() => navigate("/")}>
             <Home className="h-4 w-4 mr-1" /> View Site
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => { signOut(); navigate("/"); }}>
+          <Button variant="secondary" size="sm" onClick={handleSignOut}>
             <LogOut className="h-4 w-4 mr-1" /> Sign Out
           </Button>
         </div>
@@ -217,6 +228,7 @@ const SiteSettingsTab = () => {
 const FeaturesTab = () => {
   const { data: features } = useFeatures();
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
 
@@ -238,33 +250,37 @@ const FeaturesTab = () => {
   };
 
   return (
-    <Card>
-      <CardHeader><CardTitle>Features</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        {(features || []).map((f) => (
-          <div key={f.id} className="flex items-center gap-2 p-3 border rounded">
-            <div className="flex-1">
-              <p className="font-medium">{f.title}</p>
-              {f.description && <p className="text-sm text-muted-foreground">{f.description}</p>}
+    <>
+      <Card>
+        <CardHeader><CardTitle>Features</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {(features || []).map((f) => (
+            <div key={f.id} className="flex items-center gap-2 p-3 border rounded">
+              <div className="flex-1">
+                <p className="font-medium">{f.title}</p>
+                {f.description && <p className="text-sm text-muted-foreground">{f.description}</p>}
+              </div>
+              <Button variant="destructive" size="icon" onClick={() => confirm("Delete this feature?", () => deleteFeature(f.id))}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="destructive" size="icon" onClick={() => deleteFeature(f.id)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          ))}
+          <div className="border-t pt-4 space-y-2">
+            <Input placeholder="Feature title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+            <Input placeholder="Description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+            <Button onClick={addFeature}><Plus className="h-4 w-4 mr-1" /> Add Feature</Button>
           </div>
-        ))}
-        <div className="border-t pt-4 space-y-2">
-          <Input placeholder="Feature title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-          <Input placeholder="Description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
-          <Button onClick={addFeature}><Plus className="h-4 w-4 mr-1" /> Add Feature</Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      <ConfirmDialog />
+    </>
   );
 };
 
 const SliderTab = () => {
   const { data: slides } = useSliderImages();
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const uploadSlide = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -288,26 +304,29 @@ const SliderTab = () => {
   };
 
   return (
-    <Card>
-      <CardHeader><CardTitle>Admission Slider Images</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {(slides || []).map((s) => (
-            <div key={s.id} className="relative group">
-              <img src={s.image_url} alt="" className="w-full h-32 object-cover rounded border" />
-              <Button
-                variant="destructive" size="icon"
-                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition h-7 w-7"
-                onClick={() => deleteSlide(s.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-        <Input type="file" accept="image/*" onChange={uploadSlide} />
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader><CardTitle>Admission Slider Images</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {(slides || []).map((s) => (
+              <div key={s.id} className="relative group">
+                <img src={s.image_url} alt="" className="w-full h-32 object-cover rounded border" />
+                <Button
+                  variant="destructive" size="icon"
+                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition h-7 w-7"
+                  onClick={() => confirm("Delete this slide?", () => deleteSlide(s.id))}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Input type="file" accept="image/*" onChange={uploadSlide} />
+        </CardContent>
+      </Card>
+      <ConfirmDialog />
+    </>
   );
 };
 
@@ -317,6 +336,7 @@ const AnalysisTab = () => {
   const { data: analysisData } = useAnalysisData(selectedYear);
   const { data: settings } = useSiteSettings();
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [newCat, setNewCat] = useState("");
   const [newVal, setNewVal] = useState("");
   const [newIcon, setNewIcon] = useState("users");
@@ -352,67 +372,69 @@ const AnalysisTab = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle>Analysis Data</CardTitle>
-          <div className="flex items-center gap-2">
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle>Analysis Data</CardTitle>
+            <div className="flex items-center gap-2">
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button
+                variant={selectedYear === primaryYear ? "secondary" : "outline"}
+                size="sm"
+                onClick={setPrimaryYear}
+                disabled={selectedYear === primaryYear}
+              >
+                {selectedYear === primaryYear ? "★ Primary" : "Set Primary"}
+              </Button>
+            </div>
+          </div>
+          {primaryYear && (
+            <p className="text-xs text-muted-foreground">Primary year (shown first to visitors): <strong>{primaryYear}</strong></p>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(analysisData || []).map((d) => (
+            <div key={d.id} className="flex items-center gap-2 p-3 border rounded">
+              <div className="flex-1">
+                <p className="font-medium">{d.category}: {d.value}</p>
+                <p className="text-xs text-muted-foreground">icon: {d.icon}</p>
+              </div>
+              <Button variant="destructive" size="icon" onClick={() => confirm("Delete this analysis data?", () => deleteData(d.id))}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <div className="border-t pt-4 space-y-2">
+            <Input placeholder="Category (e.g. Students)" value={newCat} onChange={(e) => setNewCat(e.target.value)} />
+            <Input type="number" placeholder="Value" value={newVal} onChange={(e) => setNewVal(e.target.value)} />
+            <Select value={newIcon} onValueChange={setNewIcon}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                <SelectItem value="users">Users</SelectItem>
+                <SelectItem value="graduation-cap">Graduation Cap</SelectItem>
+                <SelectItem value="bus">Bus</SelectItem>
+                <SelectItem value="heart-handshake">Heart Handshake</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              variant={selectedYear === primaryYear ? "secondary" : "outline"}
-              size="sm"
-              onClick={setPrimaryYear}
-              disabled={selectedYear === primaryYear}
-            >
-              {selectedYear === primaryYear ? "★ Primary" : "Set Primary"}
-            </Button>
+            <Button onClick={addData}><Plus className="h-4 w-4 mr-1" /> Add Data</Button>
           </div>
-        </div>
-        {primaryYear && (
-          <p className="text-xs text-muted-foreground">Primary year (shown first to visitors): <strong>{primaryYear}</strong></p>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {(analysisData || []).map((d) => (
-          <div key={d.id} className="flex items-center gap-2 p-3 border rounded">
-            <div className="flex-1">
-              <p className="font-medium">{d.category}: {d.value}</p>
-              <p className="text-xs text-muted-foreground">icon: {d.icon}</p>
-            </div>
-            <Button variant="destructive" size="icon" onClick={() => deleteData(d.id)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-        <div className="border-t pt-4 space-y-2">
-          <Input placeholder="Category (e.g. Students)" value={newCat} onChange={(e) => setNewCat(e.target.value)} />
-          <Input type="number" placeholder="Value" value={newVal} onChange={(e) => setNewVal(e.target.value)} />
-          <Select value={newIcon} onValueChange={setNewIcon}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="users">Users</SelectItem>
-              <SelectItem value="graduation-cap">Graduation Cap</SelectItem>
-              <SelectItem value="bus">Bus</SelectItem>
-              <SelectItem value="heart-handshake">Heart Handshake</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={addData}><Plus className="h-4 w-4 mr-1" /> Add Data</Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      <ConfirmDialog />
+    </>
   );
 };
-
-// ProgrammesTab moved to src/components/admin/ProgrammesTab.tsx
 
 const FooterLogosTab = () => {
   const { data: logos } = useFooterLogos();
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [name, setName] = useState("");
 
   const uploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -438,30 +460,33 @@ const FooterLogosTab = () => {
   };
 
   return (
-    <Card>
-      <CardHeader><CardTitle>Footer Logos (Auto-scrolling)</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-          {(logos || []).map((l) => (
-            <div key={l.id} className="relative group text-center">
-              <img src={l.image_url} alt={l.name || ""} className="w-full h-16 object-contain border rounded p-1" />
-              {l.name && <p className="text-xs mt-1">{l.name}</p>}
-              <Button
-                variant="destructive" size="icon"
-                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition h-6 w-6"
-                onClick={() => deleteLogo(l.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-        <div className="border-t pt-4 space-y-2">
-          <Input placeholder="Logo name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
-          <Input type="file" accept="image/*" onChange={uploadLogo} />
-        </div>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader><CardTitle>Footer Logos (Auto-scrolling)</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+            {(logos || []).map((l) => (
+              <div key={l.id} className="relative group text-center">
+                <img src={l.image_url} alt={l.name || ""} className="w-full h-16 object-contain border rounded p-1" />
+                {l.name && <p className="text-xs mt-1">{l.name}</p>}
+                <Button
+                  variant="destructive" size="icon"
+                  className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition h-6 w-6"
+                  onClick={() => confirm("Delete this logo?", () => deleteLogo(l.id))}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="border-t pt-4 space-y-2">
+            <Input placeholder="Logo name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input type="file" accept="image/*" onChange={uploadLogo} />
+          </div>
+        </CardContent>
+      </Card>
+      <ConfirmDialog />
+    </>
   );
 };
 
