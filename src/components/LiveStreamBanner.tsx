@@ -25,7 +25,7 @@ const LiveStreamBanner = () => {
   if (activeStreams.length === 0) return null;
 
   return (
-    <div className="bg-red-600 text-white">
+    <div id="live-stream" className="bg-destructive text-destructive-foreground">
       {activeStreams.map((stream) => {
         const videoId = extractYouTubeId(stream.youtube_url);
         return (

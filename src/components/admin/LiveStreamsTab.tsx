@@ -86,7 +86,7 @@ const LiveStreamsTab = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      {s.is_live && <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full"><Radio className="h-3 w-3 animate-pulse" />LIVE</span>}
+                      {s.is_live && <span className="flex items-center gap-1 text-xs font-bold text-destructive-foreground bg-destructive px-2 py-0.5 rounded-full"><Radio className="h-3 w-3 animate-pulse" />LIVE</span>}
                       <p className="font-medium">{s.title}</p>
                     </div>
                     <p className="text-xs text-muted-foreground break-all mt-1">{s.youtube_url}</p>
