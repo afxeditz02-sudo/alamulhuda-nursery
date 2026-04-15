@@ -92,3 +92,13 @@ export const useNavMenuItems = () =>
       return data;
     },
   });
+
+export const useLiveStreams = () =>
+  useQuery({
+    queryKey: ["live_streams"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("live_streams").select("*").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
