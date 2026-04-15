@@ -16,6 +16,7 @@ import ProgrammesTab from "@/components/admin/ProgrammesTab";
 import BannersTab from "@/components/admin/BannersTab";
 import TabsPagesTab from "@/components/admin/TabsPagesTab";
 import UsersTab from "@/components/admin/UsersTab";
+import LiveStreamsTab from "@/components/admin/LiveStreamsTab";
 import { useConfirm } from "@/hooks/useConfirm";
 import {
   AlertDialog,
@@ -134,6 +135,7 @@ const Admin = () => {
             <TabsTrigger value="programmes">Programmes</TabsTrigger>
             <TabsTrigger value="footer">Footer Logos</TabsTrigger>
             <TabsTrigger value="tabs-pages">Tabs/Pages</TabsTrigger>
+            <TabsTrigger value="live">Live Streams</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
@@ -145,6 +147,7 @@ const Admin = () => {
           <TabsContent value="programmes"><ProgrammesTab /></TabsContent>
           <TabsContent value="footer"><FooterLogosTab /></TabsContent>
           <TabsContent value="tabs-pages"><TabsPagesTab /></TabsContent>
+          <TabsContent value="live"><LiveStreamsTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
         </Tabs>
       </div>

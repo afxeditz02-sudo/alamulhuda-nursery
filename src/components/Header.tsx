@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { useSiteSettings, useNavMenuItems } from "@/hooks/useSiteData";
-import { GraduationCap, Menu, X } from "lucide-react";
+import { useSiteSettings, useNavMenuItems, useLiveStreams } from "@/hooks/useSiteData";
+import { GraduationCap, Menu, X, Radio } from "lucide-react";
 
 const Header = () => {
   const { data: settings } = useSiteSettings();
   const { data: navItems } = useNavMenuItems();
+  const { data: streams } = useLiveStreams();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const visibleItems = (navItems || []).filter((item) => item.is_visible);
+  const now = new Date();
+  const hasLive = (streams || []).some((s) => {
+    if (!s.is_published) return false;
+    if (s.is_live) return true;
+    if (s.scheduled_at && new Date(s.scheduled_at) <= now && (!s.ends_at || new Date(s.ends_at) >= now)) return true;
+    return false;
+  });
 
   return (
     <header className="bg-primary text-primary-foreground shadow-lg relative">
@@ -25,15 +33,22 @@ const Header = () => {
           </h1>
         </div>
 
-        {visibleItems.length > 0 && (
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="p-2 rounded-md hover:bg-primary-foreground/20 transition ml-2"
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        )}
+        <div className="flex items-center gap-2 ml-2">
+          {hasLive && (
+            <a href="#live-stream" className="flex items-center gap-1 px-2 py-1 rounded-full bg-destructive text-destructive-foreground text-xs font-bold animate-pulse">
+              <Radio className="h-3 w-3" /> LIVE
+            </a>
+          )}
+          {(visibleItems.length > 0 || hasLive) && (
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 rounded-md hover:bg-primary-foreground/20 transition"
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Mobile/Hamburger dropdown */}

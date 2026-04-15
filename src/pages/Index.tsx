@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import LiveStreamBanner from "@/components/LiveStreamBanner";
 import BannerSlider from "@/components/BannerSlider";
 import FeaturesSection from "@/components/FeaturesSection";
 import AdmissionSlider from "@/components/AdmissionSlider";
@@ -10,6 +11,7 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Header />
+      <LiveStreamBanner />
       <BannerSlider />
       <FeaturesSection />
       <AdmissionSlider />
