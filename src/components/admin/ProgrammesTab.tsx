@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, Edit2, X, FileText, Film, Image as ImageIcon, CalendarClock, Upload, Replace } from "lucide-react";
+import { useConfirm } from "@/hooks/useConfirm";
 
 const generateYears = () => {
   const years = [];
@@ -27,6 +28,7 @@ const ProgrammesTab = () => {
   const { data: programmes } = useProgrammes(selectedYear);
   const { data: settings } = useSiteSettings();
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const primaryYear = (settings as any)?.primary_programmes_year || "2025-26";
 
@@ -58,7 +60,6 @@ const ProgrammesTab = () => {
   const getFileType = (file: File): "image" | "video" | "file" => {
     if (file.type.startsWith("image/")) return "image";
     if (file.type.startsWith("video/")) return "video";
-    // Fallback: check extension for mobile devices that may not set MIME type
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
     if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "heic"].includes(ext)) return "image";
     if (["mp4", "mov", "avi", "mkv", "webm", "3gp", "m4v", "wmv"].includes(ext)) return "video";
@@ -68,7 +69,6 @@ const ProgrammesTab = () => {
   const uploadFiles = async (files: File[]): Promise<MediaItem[]> => {
     const items: MediaItem[] = [];
     for (const file of files) {
-      // Sanitize filename: remove special chars
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const path = `programmes/${Date.now()}-${safeName}`;
       toast.info(`Uploading ${file.name}...`);
@@ -190,151 +190,154 @@ const ProgrammesTab = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle>Programmes</CardTitle>
-          <div className="flex items-center gap-2">
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button
-              variant={selectedYear === primaryYear ? "secondary" : "outline"}
-              size="sm"
-              onClick={setPrimaryYear}
-              disabled={selectedYear === primaryYear}
-            >
-              {selectedYear === primaryYear ? "★ Primary" : "Set Primary"}
-            </Button>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle>Programmes</CardTitle>
+            <div className="flex items-center gap-2">
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {allYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button
+                variant={selectedYear === primaryYear ? "secondary" : "outline"}
+                size="sm"
+                onClick={setPrimaryYear}
+                disabled={selectedYear === primaryYear}
+              >
+                {selectedYear === primaryYear ? "★ Primary" : "Set Primary"}
+              </Button>
+            </div>
           </div>
-        </div>
-        {primaryYear && (
-          <p className="text-xs text-muted-foreground">Primary year (shown first to visitors): <strong>{primaryYear}</strong></p>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {(programmes || []).map((p) => {
-          const media: MediaItem[] = Array.isArray(p.media) ? (p.media as any) : [];
-          const isEditing = editingId === p.id;
+          {primaryYear && (
+            <p className="text-xs text-muted-foreground">Primary year (shown first to visitors): <strong>{primaryYear}</strong></p>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(programmes || []).map((p) => {
+            const media: MediaItem[] = Array.isArray(p.media) ? (p.media as any) : [];
+            const isEditing = editingId === p.id;
 
-          return (
-            <div key={p.id} className="p-4 border rounded-lg space-y-3">
-              {isEditing ? (
-                <div className="space-y-3">
-                  <Input value={editForm.title} onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))} placeholder="Title" />
-                  <Textarea value={editForm.description} onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Description" />
-                  <Input value={editForm.see_more_url} onChange={(e) => setEditForm(f => ({ ...f, see_more_url: e.target.value }))} placeholder="See More URL" />
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarClock className="h-3 w-3" /> Schedule</label>
-                      <Input type="datetime-local" value={editForm.scheduled_at} onChange={(e) => setEditForm(f => ({ ...f, scheduled_at: e.target.value }))} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs text-muted-foreground">Published</label>
-                      <Switch checked={editForm.is_published} onCheckedChange={(v) => setEditForm(f => ({ ...f, is_published: v }))} />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => saveEdit(p.id)}><Save className="h-4 w-4 mr-1" /> Save</Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-3">
-                  {p.image_url && <img src={p.image_url} alt="" className="w-16 h-16 object-cover rounded" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">{p.title}</p>
-                    {p.description && <p className="text-sm text-muted-foreground truncate">{p.description}</p>}
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      {!p.is_published && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Draft</span>}
-                      {p.scheduled_at && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded flex items-center gap-1"><CalendarClock className="h-3 w-3" />{new Date(p.scheduled_at).toLocaleString()}</span>}
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="outline" size="icon" onClick={() => startEdit(p)}><Edit2 className="h-4 w-4" /></Button>
-                    <Button variant="destructive" size="icon" onClick={() => deleteProgramme(p.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t pt-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Media ({media.length}/{MAX_MEDIA})</p>
-                {media.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {media.map((m, i) => (
-                      <div key={i} className="relative group border rounded p-1 flex items-center gap-1 text-xs bg-muted/50 pr-6">
-                        {getMediaIcon(m.type)}
-                        <a href={m.url} target="_blank" rel="noopener noreferrer" className="hover:underline max-w-[120px] truncate">{m.name}</a>
-                        <button
-                          onClick={() => removeMediaItem(p.id, media, i)}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 text-destructive opacity-0 group-hover:opacity-100 transition"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+            return (
+              <div key={p.id} className="p-4 border rounded-lg space-y-3">
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <Input value={editForm.title} onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))} placeholder="Title" />
+                    <Textarea value={editForm.description} onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Description" />
+                    <Input value={editForm.see_more_url} onChange={(e) => setEditForm(f => ({ ...f, see_more_url: e.target.value }))} placeholder="See More URL" />
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarClock className="h-3 w-3" /> Schedule</label>
+                        <Input type="datetime-local" value={editForm.scheduled_at} onChange={(e) => setEditForm(f => ({ ...f, scheduled_at: e.target.value }))} />
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-muted-foreground">Published</label>
+                        <Switch checked={editForm.is_published} onCheckedChange={(v) => setEditForm(f => ({ ...f, is_published: v }))} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => saveEdit(p.id)}><Save className="h-4 w-4 mr-1" /> Save</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3">
+                    {p.image_url && <img src={p.image_url} alt="" className="w-16 h-16 object-cover rounded" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">{p.title}</p>
+                      {p.description && <p className="text-sm text-muted-foreground truncate">{p.description}</p>}
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        {!p.is_published && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Draft</span>}
+                        {p.scheduled_at && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded flex items-center gap-1"><CalendarClock className="h-3 w-3" />{new Date(p.scheduled_at).toLocaleString()}</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="icon" onClick={() => startEdit(p)}><Edit2 className="h-4 w-4" /></Button>
+                      <Button variant="destructive" size="icon" onClick={() => confirm("Delete this programme and all its media?", () => deleteProgramme(p.id))}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
                   </div>
                 )}
-                <div className="flex gap-2 flex-wrap">
-                  {media.length < MAX_MEDIA && (
+
+                <div className="border-t pt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Media ({media.length}/{MAX_MEDIA})</p>
+                  {media.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {media.map((m, i) => (
+                        <div key={i} className="relative group border rounded p-1 flex items-center gap-1 text-xs bg-muted/50 pr-6">
+                          {getMediaIcon(m.type)}
+                          <a href={m.url} target="_blank" rel="noopener noreferrer" className="hover:underline max-w-[120px] truncate">{m.name}</a>
+                          <button
+                            onClick={() => confirm("Remove this media file?", () => removeMediaItem(p.id, media, i))}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-destructive opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 flex-wrap">
+                    {media.length < MAX_MEDIA && (
+                      <label className="cursor-pointer">
+                        <Button variant="outline" size="sm" asChild>
+                          <span><Upload className="h-3 w-3 mr-1" /> Add Files</span>
+                        </Button>
+                        <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
+                          onChange={(e) => addMediaToExisting(p.id, e.target.files, media)} />
+                      </label>
+                    )}
                     <label className="cursor-pointer">
                       <Button variant="outline" size="sm" asChild>
-                        <span><Upload className="h-3 w-3 mr-1" /> Add Files</span>
+                        <span><Replace className="h-3 w-3 mr-1" /> Replace All</span>
                       </Button>
                       <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
-                        onChange={(e) => addMediaToExisting(p.id, e.target.files, media)} />
+                        onChange={(e) => replaceMedia(p.id, e.target.files, media)} />
                     </label>
-                  )}
-                  <label className="cursor-pointer">
-                    <Button variant="outline" size="sm" asChild>
-                      <span><Replace className="h-3 w-3 mr-1" /> Replace All</span>
-                    </Button>
-                    <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
-                      onChange={(e) => replaceMedia(p.id, e.target.files, media)} />
-                  </label>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        <div className="border-t pt-4 space-y-3">
-          <p className="font-medium text-sm">Add New Programme</p>
-          <Input placeholder="Title *" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Textarea placeholder="Description (optional)" value={desc} onChange={(e) => setDesc(e.target.value)} />
-          <Input placeholder="See More URL (optional)" value={seeMore} onChange={(e) => setSeeMore(e.target.value)} />
-          
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><CalendarClock className="h-3 w-3" /> Schedule (optional)</label>
-              <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+          <div className="border-t pt-4 space-y-3">
+            <p className="font-medium text-sm">Add New Programme</p>
+            <Input placeholder="Title *" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Textarea placeholder="Description (optional)" value={desc} onChange={(e) => setDesc(e.target.value)} />
+            <Input placeholder="See More URL (optional)" value={seeMore} onChange={(e) => setSeeMore(e.target.value)} />
+            
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><CalendarClock className="h-3 w-3" /> Schedule (optional)</label>
+                <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+              </div>
+              <div className="flex items-center gap-2 pt-4">
+                <label className="text-xs text-muted-foreground">Published</label>
+                <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+              </div>
             </div>
-            <div className="flex items-center gap-2 pt-4">
-              <label className="text-xs text-muted-foreground">Published</label>
-              <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Media (images, videos, files — max {MAX_MEDIA})</label>
+              <Input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm"
+                onChange={(e) => {
+                  const files = e.target.files ? Array.from(e.target.files) : [];
+                  if (files.length > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files`); return; }
+                  setNewMedia(files);
+                }} />
+              {newMedia.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">{newMedia.length} file(s) selected</p>
+              )}
             </div>
+
+            <Button onClick={addProgramme}><Plus className="h-4 w-4 mr-1" /> Add Programme</Button>
           </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Media (images, videos, files — max {MAX_MEDIA})</label>
-            <Input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm"
-              onChange={(e) => {
-                const files = e.target.files ? Array.from(e.target.files) : [];
-                if (files.length > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files`); return; }
-                setNewMedia(files);
-              }} />
-            {newMedia.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">{newMedia.length} file(s) selected</p>
-            )}
-          </div>
-
-          <Button onClick={addProgramme}><Plus className="h-4 w-4 mr-1" /> Add Programme</Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      <ConfirmDialog />
+    </>
   );
 };
 
