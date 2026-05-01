@@ -122,34 +122,40 @@ export type Database = {
       live_streams: {
         Row: {
           created_at: string | null
+          embed_code: string | null
           ends_at: string | null
           id: string
           is_live: boolean
           is_published: boolean
           scheduled_at: string | null
           sort_order: number | null
+          thumbnail_url: string | null
           title: string
           youtube_url: string
         }
         Insert: {
           created_at?: string | null
+          embed_code?: string | null
           ends_at?: string | null
           id?: string
           is_live?: boolean
           is_published?: boolean
           scheduled_at?: string | null
           sort_order?: number | null
+          thumbnail_url?: string | null
           title: string
           youtube_url: string
         }
         Update: {
           created_at?: string | null
+          embed_code?: string | null
           ends_at?: string | null
           id?: string
           is_live?: boolean
           is_published?: boolean
           scheduled_at?: string | null
           sort_order?: number | null
+          thumbnail_url?: string | null
           title?: string
           youtube_url?: string
         }
