@@ -38,6 +38,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [removedPopup, setRemovedPopup] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -119,11 +120,12 @@ const Admin = () => {
           <Button variant="secondary" size="sm" onClick={() => navigate("/")}>
             <Home className="h-4 w-4 mr-1" /> View Site
           </Button>
-          <Button variant="secondary" size="sm" onClick={handleSignOut}>
+          <Button variant="secondary" size="sm" onClick={() => confirm("Are you sure you want to sign out?", handleSignOut)}>
             <LogOut className="h-4 w-4 mr-1" /> Sign Out
           </Button>
         </div>
       </header>
+      <ConfirmDialog />
       <div className="container mx-auto p-4 max-w-5xl">
         <Tabs defaultValue="settings">
           <TabsList className="flex flex-wrap h-auto gap-1 mb-6">
