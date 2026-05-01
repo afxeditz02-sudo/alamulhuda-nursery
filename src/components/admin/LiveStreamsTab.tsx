@@ -42,9 +42,9 @@ const LiveStreamsTab = () => {
     try {
       const ext = file.name.split(".").pop();
       const path = `live-thumbnails/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from("site-images").upload(path, file, { upsert: true });
       if (error) throw error;
-      const { data } = supabase.storage.from("site-assets").getPublicUrl(path);
+      const { data } = supabase.storage.from("site-images").getPublicUrl(path);
       setThumbnailUrl(data.publicUrl);
       toast.success("Thumbnail uploaded");
     } catch (e: any) {
