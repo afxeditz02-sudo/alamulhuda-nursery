@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirm } from "@/hooks/useConfirm";
 
 const Auth = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
@@ -18,6 +19,7 @@ const Auth = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isRemoved, setIsRemoved] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     if (!loading && user && isAdmin) {
@@ -86,10 +88,11 @@ const Auth = () => {
     }
   };
 
-  const handleSignOutAndRetry = async () => {
+  const doSignOutAndRetry = async () => {
     await signOut();
     setIsRemoved(false);
   };
+  const handleSignOutAndRetry = () => confirm("Are you sure you want to sign out?", doSignOutAndRetry);
 
   if (loading || checkingProfile) {
     return (
