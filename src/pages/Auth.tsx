@@ -121,6 +121,7 @@ const Auth = () => {
             </Button>
           </div>
         </div>
+        <ConfirmDialog />
       </div>
     );
   }
@@ -144,6 +145,7 @@ const Auth = () => {
             </Button>
           </div>
         </div>
+        <ConfirmDialog />
       </div>
     );
   }
@@ -221,6 +223,7 @@ const Auth = () => {
           )}
         </p>
       </div>
+      <ConfirmDialog />
     </div>
   );
 };
