@@ -110,48 +110,76 @@ const Admin = () => {
     );
   }
 
-  if (!user || !isAdmin) return null;
+  const sections: { key: string; label: string; icon: any; render: () => JSX.Element }[] = [
+    { key: "settings", label: "Settings", icon: SettingsIcon, render: () => <SiteSettingsTab /> },
+    { key: "users", label: "Users", icon: ShieldCheck, render: () => <UsersTab /> },
+    { key: "features", label: "Features", icon: ListChecks, render: () => <FeaturesTab /> },
+    { key: "admission", label: "Addmission & calculation", icon: School, render: () => (
+      <div className="space-y-6"><SliderTab /><AnalysisTab /></div>
+    )},
+    { key: "news", label: "News", icon: Newspaper, render: () => <ProgrammesTab /> },
+    { key: "banner", label: "Banner", icon: GalleryHorizontalEnd, render: () => <BannersTab /> },
+    { key: "live", label: "Live", icon: Radio, render: () => <LiveStreamsTab /> },
+    { key: "tabs", label: "Tabs", icon: AppWindow, render: () => <TabsPagesTab /> },
+    { key: "footer", label: "Footer", icon: PanelBottom, render: () => <FooterLogosTab /> },
+  ];
+
+  const active = sections.find((s) => s.key === activeSection);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Admin Panel</h1>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={() => navigate("/")}>
-            <Home className="h-4 w-4 mr-1" /> View Site
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => confirm("Are you sure you want to sign out?", handleSignOut)}>
-            <LogOut className="h-4 w-4 mr-1" /> Sign Out
-          </Button>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50/60 to-white">
+      <header className="bg-primary text-primary-foreground px-5 py-4 flex items-center justify-between rounded-b-2xl shadow-md">
+        <div className="flex items-center gap-2">
+          <SettingsIcon className="h-6 w-6" />
+          <h1 className="text-xl font-bold tracking-wide">Admin Panel</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/")}
+            aria-label="View Site"
+            className="hover:opacity-80 transition"
+          >
+            <ArrowUpRight className="h-6 w-6" />
+          </button>
+          <div className="h-6 w-px bg-primary-foreground/40" />
+          <button
+            onClick={() => confirm("Are you sure you want to sign out?", handleSignOut)}
+            aria-label="Sign Out"
+            className="hover:opacity-80 transition"
+          >
+            <LogOut className="h-6 w-6" />
+          </button>
         </div>
       </header>
       <ConfirmDialog />
       <div className="container mx-auto p-4 max-w-5xl">
-        <Tabs defaultValue="settings">
-          <TabsList className="flex flex-wrap h-auto gap-1 mb-6">
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="features">Features</TabsTrigger>
-            <TabsTrigger value="banners">Banners</TabsTrigger>
-            <TabsTrigger value="slider">Slider</TabsTrigger>
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="programmes">Programmes</TabsTrigger>
-            <TabsTrigger value="footer">Footer Logos</TabsTrigger>
-            <TabsTrigger value="tabs-pages">Tabs/Pages</TabsTrigger>
-            <TabsTrigger value="live">Live Streams</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="settings"><SiteSettingsTab /></TabsContent>
-          <TabsContent value="features"><FeaturesTab /></TabsContent>
-          <TabsContent value="banners"><BannersTab /></TabsContent>
-          <TabsContent value="slider"><SliderTab /></TabsContent>
-          <TabsContent value="analysis"><AnalysisTab /></TabsContent>
-          <TabsContent value="programmes"><ProgrammesTab /></TabsContent>
-          <TabsContent value="footer"><FooterLogosTab /></TabsContent>
-          <TabsContent value="tabs-pages"><TabsPagesTab /></TabsContent>
-          <TabsContent value="live"><LiveStreamsTab /></TabsContent>
-          <TabsContent value="users"><UsersTab /></TabsContent>
-        </Tabs>
+        {!active ? (
+          <div className="grid grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-10 lg:grid-cols-4">
+            {sections.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveSection(key)}
+                className="aspect-square bg-white rounded-3xl shadow-[0_4px_20px_-6px_rgba(37,99,235,0.18)] flex flex-col items-center justify-center gap-2 sm:gap-3 p-3 hover:shadow-[0_8px_28px_-6px_rgba(37,99,235,0.3)] hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                <Icon className="h-9 w-9 sm:h-11 sm:w-11 text-primary" strokeWidth={2.2} />
+                <span className="text-primary font-bold text-xs sm:text-sm text-center leading-tight">
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4">
+            <button
+              onClick={() => setActiveSection(null)}
+              className="flex items-center gap-1 text-primary font-semibold mb-4 hover:opacity-80 transition"
+            >
+              <ChevronLeft className="h-5 w-5" /> Back
+            </button>
+            <h2 className="text-2xl font-bold text-primary mb-4">{active.label}</h2>
+            {active.render()}
+          </div>
+        )}
       </div>
     </div>
   );
