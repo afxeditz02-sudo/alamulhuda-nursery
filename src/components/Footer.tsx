@@ -5,43 +5,53 @@ const Footer = () => {
   const { data: logos } = useFooterLogos();
 
   return (
-    <footer id="footer" className="bg-primary text-primary-foreground py-10">
-      <div className="container mx-auto px-4 text-center space-y-4">
-        <p className="text-lg font-bold">
-          {settings?.footer_copyright || "© ALAMUL HUDA ENGLISH MEDIUM NURSERY SCHOOL, Vettupara"}
-        </p>
+    <footer id="footer" className="bg-primary text-primary-foreground">
+      <div className="container mx-auto px-6 py-12 max-w-3xl">
+        {/* School name */}
+        <div className="text-center mb-10">
+          <h2 className="text-base sm:text-lg font-semibold tracking-wide leading-snug">
+            {settings?.footer_copyright || "© ALAMUL HUDA ENGLISH MEDIUM NURSERY SCHOOL, Vettupara"}
+          </h2>
+        </div>
 
-        <p className="text-primary-foreground/80">
-          {settings?.footer_managed_by || "managed by"}
-        </p>
-
+        {/* Managed by + logos */}
         {logos && logos.length > 0 && (
-          <div className="overflow-hidden py-4">
-            <div className="flex animate-marquee gap-12 items-center w-max">
-              {[...logos, ...logos].map((logo, i) => (
-                <img
-                  key={`${logo.id}-${i}`}
-                  src={logo.image_url}
-                  alt={logo.name || "Partner"}
-                  className="h-12 w-auto object-contain brightness-0 invert opacity-80"
-                />
-              ))}
+          <div className="mb-10">
+            <p className="text-center text-xs uppercase tracking-[0.2em] text-primary-foreground/60 mb-5">
+              {settings?.footer_managed_by || "managed by"}
+            </p>
+            <div className="overflow-hidden">
+              <div className="flex animate-marquee gap-10 items-center w-max">
+                {[...logos, ...logos].map((logo, i) => (
+                  <img
+                    key={`${logo.id}-${i}`}
+                    src={logo.image_url}
+                    alt={logo.name || "Partner"}
+                    className="h-10 w-auto object-contain brightness-0 invert opacity-70"
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        <p className="text-primary-foreground/90 font-semibold">
-          {settings?.footer_estd || "estd :2006"}
-        </p>
-        <p className="text-primary-foreground/80">
-          {settings?.footer_reg || "Reg:2010APS137 and ph:8606791846"}
-        </p>
-        <p className="text-primary-foreground/80">
-          {settings?.footer_under || "in under: Association of samastha minority institution(ASMI)"}
-        </p>
-        <p className="text-primary-foreground/90 font-semibold">
-          {settings?.footer_run_by || "run by : ALAMUL HUDA MADRASA COMMITTEE, VETTUPARA"}
-        </p>
+        {/* Divider */}
+        <div className="h-px bg-primary-foreground/15 mb-8" />
+
+        {/* Info */}
+        <div className="text-center space-y-1.5 text-xs sm:text-sm text-primary-foreground/75">
+          <p>
+            <span className="text-primary-foreground/90 font-medium">{settings?.footer_estd || "Estd. 2006"}</span>
+            <span className="mx-2 text-primary-foreground/40">·</span>
+            <span>{settings?.footer_reg || "Reg: 2010APS137"}</span>
+            <span className="mx-2 text-primary-foreground/40">·</span>
+            <span>Ph: 8606791846</span>
+          </p>
+          <p>{settings?.footer_under || "Under: Association of Samastha Minority Institution (ASMI)"}</p>
+          <p className="text-primary-foreground/90 pt-2">
+            {settings?.footer_run_by || "Run by Alamul Huda Madrasa Committee, Vettupara"}
+          </p>
+        </div>
       </div>
     </footer>
   );
