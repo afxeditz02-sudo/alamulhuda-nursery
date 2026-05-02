@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, Plus, Trash2, Save, Home } from "lucide-react";
+import { LogOut, Plus, Trash2, Save, ArrowUpRight, ChevronLeft, Settings as SettingsIcon, ShieldCheck, ListChecks, School, Newspaper, GalleryHorizontalEnd, Radio, AppWindow, PanelBottom } from "lucide-react";
 import ProgrammesTab from "@/components/admin/ProgrammesTab";
 import BannersTab from "@/components/admin/BannersTab";
 import TabsPagesTab from "@/components/admin/TabsPagesTab";
