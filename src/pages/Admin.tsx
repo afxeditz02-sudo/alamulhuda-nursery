@@ -38,6 +38,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [removedPopup, setRemovedPopup] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
