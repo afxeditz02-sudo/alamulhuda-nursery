@@ -9,7 +9,6 @@ import AnalysisSection from "@/components/AnalysisSection";
 import ProgrammesSection from "@/components/ProgrammesSection";
 import Footer from "@/components/Footer";
 import { useSiteSettings, useLiveStreams } from "@/hooks/useSiteData";
-import { GraduationCap } from "lucide-react";
 
 const useBannersForGate = () =>
   useQuery({
@@ -31,17 +30,8 @@ const Index = () => {
 
   if (isInitialLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 px-4">
-        <div className="relative">
-          <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
-            <GraduationCap className="h-10 w-10 text-primary" />
-          </div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-bold text-primary">ALAMUL HUDA</p>
-          <p className="text-sm text-muted-foreground italic">knowledge enlivens the soul</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
       </div>
     );
   }
