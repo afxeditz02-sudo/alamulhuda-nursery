@@ -9,7 +9,6 @@ import AnalysisSection from "@/components/AnalysisSection";
 import ProgrammesSection from "@/components/ProgrammesSection";
 import Footer from "@/components/Footer";
 import { useSiteSettings, useLiveStreams } from "@/hooks/useSiteData";
-import { GraduationCap } from "lucide-react";
 
 const useBannersForGate = () =>
   useQuery({
