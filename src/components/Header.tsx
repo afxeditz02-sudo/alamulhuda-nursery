@@ -9,7 +9,9 @@ const Header = () => {
   const { data: streams } = useLiveStreams();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const visibleItems = (navItems || []).filter((item) => item.is_visible);
+  const visibleItems = (navItems || [])
+    .filter((item) => item.is_visible)
+    .filter((item) => !/^\s*(javascript|data|vbscript|file):/i.test(item.href || ""));
   const now = new Date();
   const hasLive = (streams || []).some((s) => {
     if (!s.is_published) return false;
