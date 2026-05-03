@@ -63,7 +63,14 @@ const TabsPagesTab = () => {
 
   const addCustom = async () => {
     if (!customLabel.trim() || !customHref.trim()) return;
-    await addNavItem(customLabel, customHref);
+    const href = customHref.trim();
+    const isRelative = /^(\/|#)/.test(href);
+    const isAbsolute = /^https?:\/\//i.test(href);
+    if (!isRelative && !isAbsolute) {
+      toast.error("URL must start with /, #, http:// or https://");
+      return;
+    }
+    await addNavItem(customLabel.trim(), href);
     setCustomLabel("");
     setCustomHref("");
   };
