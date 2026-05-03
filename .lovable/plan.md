@@ -1,81 +1,49 @@
-## Admin Panel Redesign — Soft Card Grid Dashboard
+# Fix slow image/content loading on first visit
 
-Replace the current horizontal tabs UI with a clean, mobile-first dashboard of large rounded cards (one per section), matching the uploaded mockup.
+## What the user sees
+On first open, banners, slider images, logo, programme media, and footer logos all pop in slowly one by one. The page feels empty, then jumps as each image loads.
 
-### New layout
+## Root causes
+1. **Every image uses default lazy/eager behavior with no width hints.** Browser downloads full-resolution originals (often 2–5 MB phone photos uploaded by admin).
+2. **No image transforms** — Supabase Storage can resize/compress on the fly via the `render/image` endpoint, but the app uses raw `/object/public/...` URLs.
+3. **Above-the-fold images use `loading="lazy"`** (logo, first banner, live thumbnail) which delays them until layout settles.
+4. **No width/height attributes** → layout shift while images arrive.
+5. **No skeleton placeholders** → user sees blank space and thinks nothing is loading.
+6. **Footer marquee duplicates logos** (`[...logos, ...logos]`) doubling the image requests.
 
-**Header** (kept, slightly refined to match mockup):
-- Solid blue (`bg-primary`) bar with rounded bottom corners
-- Left: user-cog icon + "Admin Panel" title in bold rounded font (Poppins)
-- Right: "View Site" arrow icon (↗) · thin divider · "Sign Out" door icon
-- Both header buttons become icon-only on mobile, icon + label on `sm:` and up
-- Sign Out keeps the existing confirmation dialog
+## Changes
 
-**Dashboard grid** (replaces the `TabsList`):
-- Light blue-tinted background (`bg-slate-50` / `bg-blue-50/40`)
-- 3-column grid on mobile (`grid-cols-3`), with comfortable gap
-- Each card:
-  - White background, large rounded corners (`rounded-3xl`)
-  - Soft neumorphic shadow (`shadow-[0_4px_20px_-6px_rgba(37,99,235,0.15)]`)
-  - Square aspect, centered blue Lucide icon (size ~40), bold blue label below
-  - Hover/tap: subtle lift + shadow increase
-- Cards (in order):
-  1. Settings — `Settings` icon
-  2. Users — `ShieldUser` icon
-  3. Features — `ListChecks` icon
-  4. Admission & Calculation — `School` icon (opens combined Slider + Analysis section)
-  5. News — `Newspaper` icon (Programmes)
-  6. Banner — `GalleryHorizontalEnd` icon
-  7. Live — `Radio` icon
-  8. Tabs — `AppWindow` icon (Tabs/Pages)
-  9. Footer — `PanelBottom` icon
-
-### Navigation behavior
-
-- Clicking a card opens that section's editor as a **full-screen view** (replaces the grid):
-  - Top of section: back chevron + section title (sticky, blue text)
-  - Below: the existing tab component (`SiteSettingsTab`, `FeaturesTab`, `BannersTab`, etc.) rendered as-is — no changes to their internal logic
-- Back button returns to the dashboard grid
-- State managed locally with `useState<string | null>(activeSection)`
-- "Admission & Calculation" card renders both `SliderTab` and `AnalysisTab` stacked in one view (since the mockup combines them)
-
-### Files to change
-
-- **`src/pages/Admin.tsx`** — replace the `<Tabs>` block (lines ~129–155) with:
-  - `activeSection` state
-  - When `null`: render the card grid
-  - When set: render back button + the corresponding section component(s)
-  - Refine header buttons to icon-forward style with divider
-- No changes to any `*Tab` component internals, hooks, or DB logic
-- No changes to routing — still single `/admin` route
-
-### Visual details
-
-```text
-┌─────────────────────────────────────┐
-│ 👤⚙ Admin Panel        ↗ │ 🚪      │  ← blue header
-└─────────────────────────────────────┘
-   ┌────┐  ┌────┐  ┌────┐
-   │ ⚙  │  │ 🛡 │  │ ☆☰ │
-   │Set.│  │User│  │Feat│
-   └────┘  └────┘  └────┘
-   ┌────┐  ┌────┐  ┌────┐
-   │ 🏫 │  │ 📰 │  │ 🖼 │
-   │Adm.│  │News│  │Ban.│
-   └────┘  └────┘  └────┘
-   ┌────┐  ┌────┐  ┌────┐
-   │📡  │  │ ▭  │  │ ▤  │
-   │Live│  │Tabs│  │Foot│
-   └────┘  └────┘  └────┘
+### 1. Image helper (`src/lib/image.ts` — new)
+Small utility that rewrites Supabase Storage URLs to the transform endpoint with width + quality:
 ```
+/storage/v1/object/public/site-images/x.jpg
+  → /storage/v1/render/image/public/site-images/x.jpg?width=800&quality=70
+```
+Falls back to original URL for non-Supabase images (YouTube thumbs, etc.). Exposes `imgUrl(url, width)`.
 
-- Card label: `text-primary font-bold text-sm sm:text-base`
-- Icon: `text-primary` filled style where available (Lucide outline is fine — matches mockup feel)
-- Background: `bg-gradient-to-b from-blue-50/60 to-white`
+### 2. Update image consumers to use `imgUrl()` + proper attrs
+Files: `Header.tsx`, `BannerSlider.tsx`, `AdmissionSlider.tsx`, `LiveStreamBanner.tsx`, `ProgrammesSection.tsx`, `Footer.tsx`.
 
-### Acceptance
+For each `<img>`:
+- Use `imgUrl(src, targetWidth)` based on render size (logo 120, banner 1200, slider 1000, programme card 600, footer logo 80).
+- Add `width` / `height` (or `aspect-ratio` class) to reserve space.
+- `loading="eager"` + `fetchPriority="high"` for above-the-fold (header logo, first banner, live thumbnail).
+- `loading="lazy"` + `decoding="async"` for everything below the fold.
 
-- Admin landing shows the 3-column card grid identical in feel to the mockup
-- All existing admin functionality remains accessible via the cards
-- Sign-out confirmation still works
-- Looks clean on the current 393px mobile viewport and scales up on desktop (cards grow, grid stays 3 columns up to `md`, then `4` on `lg`)
+### 3. Skeletons while data is loading
+Show `Skeleton` blocks (already in `ui/skeleton.tsx`) in `BannerSlider`, `AdmissionSlider`, `LiveStreamBanner`, `FeaturesSection`, `ProgrammesSection` so the page renders structure immediately instead of empty space.
+
+### 4. Footer marquee fix
+Keep the duplicated array for the visual loop, but add `loading="lazy"` and small `width=80` transform so it costs almost nothing.
+
+### 5. Prefetch hint
+Add `<link rel="preconnect" href="https://bppddfcpsddvevfsvxpz.supabase.co">` to `index.html` so the storage connection is warm before the first image request.
+
+## Expected result
+- Hero/banner appears in well under a second on a phone instead of several seconds.
+- Total image bytes drop ~5–10× because admin's 3 MB photos render as ~150 KB resized JPEGs.
+- No more blank page during initial load — skeletons appear instantly.
+- No layout shift as images arrive.
+
+## Out of scope
+No DB or admin-panel changes. Existing uploaded files keep working as-is; the transform endpoint reads the same originals.
