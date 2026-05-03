@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Plus, Trash2, CalendarClock } from "lucide-react";
 import { useConfirm } from "@/hooks/useConfirm";
+import { isSafeUrl } from "@/lib/utils";
 
 const useBanners = () =>
   useQuery({
@@ -37,6 +38,10 @@ const BannersTab = () => {
   const addBanner = async () => {
     if (!newFile) {
       toast.error("Please select an image");
+      return;
+    }
+    if (linkUrl && !isSafeUrl(linkUrl)) {
+      toast.error("Link URL must start with http:// or https://");
       return;
     }
     const safeName = newFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");

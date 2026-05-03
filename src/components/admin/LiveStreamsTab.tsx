@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Trash2, Radio, Video, Upload } from "lucide-react";
 import { useConfirm } from "@/hooks/useConfirm";
+import { isSafeUrl } from "@/lib/utils";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -56,6 +57,14 @@ const LiveStreamsTab = () => {
 
   const addStream = async () => {
     if (!title.trim()) { toast.error("Title required"); return; }
+    if (youtubeUrl && !isSafeUrl(youtubeUrl)) {
+      toast.error("YouTube URL must start with http:// or https://");
+      return;
+    }
+    if (thumbnailUrl && !isSafeUrl(thumbnailUrl)) {
+      toast.error("Thumbnail URL must start with http:// or https://");
+      return;
+    }
     const idFromUrl = extractYouTubeId(youtubeUrl);
     const idFromEmbed = extractIdFromEmbed(embedCode);
     if (!idFromUrl && !idFromEmbed) {
