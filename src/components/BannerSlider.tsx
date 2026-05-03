@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { imgUrl } from "@/lib/image";
+import { isSafeUrl } from "@/lib/utils";
 
 const useBanners = () =>
   useQuery({
