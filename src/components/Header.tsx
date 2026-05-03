@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSiteSettings, useNavMenuItems, useLiveStreams } from "@/hooks/useSiteData";
 import { GraduationCap, Menu, X, Radio } from "lucide-react";
+import { imgUrl } from "@/lib/image";
 
 const Header = () => {
   const { data: settings } = useSiteSettings();
@@ -22,7 +23,16 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1 justify-center md:justify-start">
           {settings?.logo_url ? (
-            <img src={settings.logo_url} alt="School Logo" className="h-14 w-14 rounded-full object-cover" />
+            <img
+              src={imgUrl(settings.logo_url, 160)}
+              alt="School Logo"
+              width={56}
+              height={56}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="h-14 w-14 rounded-full object-cover"
+            />
           ) : (
             <div className="h-14 w-14 rounded-full bg-primary-foreground/20 flex items-center justify-center">
               <GraduationCap className="h-7 w-7" />

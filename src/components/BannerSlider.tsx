@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
+import { imgUrl } from "@/lib/image";
 
 const useBanners = () =>
   useQuery({
@@ -33,10 +34,12 @@ const BannerSlider = () => {
     const b = activeBanners[0];
     const img = (
       <img
-        src={b.image_url}
+        src={imgUrl(b.image_url, 1400)}
         alt="Banner"
         className="w-full h-auto object-contain"
-        loading="lazy"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
       />
     );
     return (
@@ -56,13 +59,15 @@ const BannerSlider = () => {
         className="w-full"
       >
         <CarouselContent className="ml-0">
-          {activeBanners.map((b) => {
+          {activeBanners.map((b, idx) => {
             const img = (
               <img
-                src={b.image_url}
+                src={imgUrl(b.image_url, 1400)}
                 alt="Banner"
                 className="w-full h-auto object-contain"
-                loading="lazy"
+                loading={idx === 0 ? "eager" : "lazy"}
+                fetchPriority={idx === 0 ? "high" : "auto"}
+                decoding="async"
               />
             );
             return (
