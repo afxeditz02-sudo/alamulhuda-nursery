@@ -45,7 +45,7 @@ const BannerSlider = () => {
     );
     return (
       <section className="w-full">
-        {b.link_url ? (
+        {b.link_url && isSafeUrl(b.link_url) ? (
           <a href={b.link_url} target="_blank" rel="noopener noreferrer">{img}</a>
         ) : img}
       </section>
@@ -73,7 +73,7 @@ const BannerSlider = () => {
             );
             return (
               <CarouselItem key={b.id} className="pl-0">
-                {b.link_url ? (
+                {b.link_url && isSafeUrl(b.link_url) ? (
                   <a href={b.link_url} target="_blank" rel="noopener noreferrer">{img}</a>
                 ) : img}
               </CarouselItem>

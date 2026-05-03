@@ -7,6 +7,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext
 import { FileText } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import { imgUrl } from "@/lib/image";
+import { isSafeUrl } from "@/lib/utils";
 
 const generateYears = () => {
   const years = [];
@@ -127,7 +128,7 @@ const ProgrammesSection = () => {
                   {/* File attachments */}
                   {fileMedia.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {fileMedia.map((m, i) => (
+                      {fileMedia.filter((m) => isSafeUrl(m.url)).map((m, i) => (
                         <a key={i} href={m.url} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs border rounded px-2 py-1 hover:bg-muted transition">
                           <FileText className="h-3 w-3" />
@@ -136,7 +137,7 @@ const ProgrammesSection = () => {
                       ))}
                     </div>
                   )}
-                  {prog.see_more_url && (
+                  {prog.see_more_url && isSafeUrl(prog.see_more_url) && (
                     <Button variant="link" className="p-0" asChild>
                       <a href={prog.see_more_url} target="_blank" rel="noopener noreferrer">
                         See more →
