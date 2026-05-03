@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSiteSettings, useSliderImages } from "@/hooks/useSiteData";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { imgUrl } from "@/lib/image";
 
 const AdmissionSlider = () => {
   const { data: settings } = useSiteSettings();
@@ -37,12 +38,14 @@ const AdmissionSlider = () => {
               className="flex transition-transform duration-500"
               style={{ transform: `translateX(-${current * 100}%)` }}
             >
-              {slides!.map((slide) => (
+              {slides!.map((slide, i) => (
                 <div key={slide.id} className="min-w-full">
                   <img
-                    src={slide.image_url}
+                    src={imgUrl(slide.image_url, 1200)}
                     alt={slide.heading || "Admission"}
                     className="w-full h-64 md:h-96 object-cover"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding="async"
                   />
                 </div>
               ))}

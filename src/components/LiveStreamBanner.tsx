@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLiveStreams } from "@/hooks/useSiteData";
 import { Radio, Play, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { imgUrl } from "@/lib/image";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -50,9 +51,23 @@ const LiveStreamBanner = () => {
                 ) : (
                   <>
                     {stream.thumbnail_url ? (
-                      <img src={stream.thumbnail_url} alt={stream.title} className="w-full h-full object-cover" />
+                      <img
+                        src={imgUrl(stream.thumbnail_url, 1000)}
+                        alt={stream.title}
+                        className="w-full h-full object-cover"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                      />
                     ) : videoId ? (
-                      <img src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`} alt={stream.title} className="w-full h-full object-cover" />
+                      <img
+                        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                        alt={stream.title}
+                        className="w-full h-full object-cover"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                      />
                     ) : (
                       <div className="w-full h-full bg-muted" />
                     )}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { FileText } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
+import { imgUrl } from "@/lib/image";
 
 const generateYears = () => {
   const years = [];
@@ -21,10 +22,11 @@ const MediaSlide = ({ item }: { item: MediaItem }) => {
   if (item.type === "image") {
     return (
       <img
-        src={item.url}
+        src={imgUrl(item.url, 800)}
         alt={item.name}
         className="w-full h-auto rounded object-contain"
         loading="lazy"
+        decoding="async"
       />
     );
   }

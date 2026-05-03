@@ -1,4 +1,5 @@
 import { useSiteSettings, useFooterLogos } from "@/hooks/useSiteData";
+import { imgUrl } from "@/lib/image";
 
 const Footer = () => {
   const { data: settings } = useSiteSettings();
@@ -25,8 +26,12 @@ const Footer = () => {
                 {[...logos, ...logos].map((logo, i) => (
                   <img
                     key={`${logo.id}-${i}`}
-                    src={logo.image_url}
+                    src={imgUrl(logo.image_url, 120)}
                     alt={logo.name || "Partner"}
+                    width={40}
+                    height={40}
+                    loading="lazy"
+                    decoding="async"
                     className="h-10 w-auto object-contain brightness-0 invert opacity-70"
                   />
                 ))}
