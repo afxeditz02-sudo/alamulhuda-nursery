@@ -3,6 +3,7 @@ import { useLiveStreams } from "@/hooks/useSiteData";
 import { Radio, Play, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { imgUrl } from "@/lib/image";
+import { isSafeUrl } from "@/lib/utils";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -36,7 +37,8 @@ const LiveStreamBanner = () => {
         {activeStreams.map((stream: any) => {
           const videoId = extractYouTubeId(stream.youtube_url) || extractIdFromEmbed(stream.embed_code || "");
           const isPlaying = playing[stream.id];
-          const watchUrl = stream.youtube_url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : "#");
+          const rawWatchUrl = stream.youtube_url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : "");
+          const watchUrl = isSafeUrl(rawWatchUrl) ? rawWatchUrl : "#";
 
           return (
             <div key={stream.id} className="max-w-3xl mx-auto">

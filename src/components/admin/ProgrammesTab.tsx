@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, Edit2, X, FileText, Film, Image as ImageIcon, CalendarClock, Upload, Replace } from "lucide-react";
 import { useConfirm } from "@/hooks/useConfirm";
+import { isSafeUrl } from "@/lib/utils";
 
 const generateYears = () => {
   const years = [];
@@ -90,6 +91,7 @@ const ProgrammesTab = () => {
 
   const addProgramme = async () => {
     if (!title.trim()) { toast.error("Title is required"); return; }
+    if (seeMore && !isSafeUrl(seeMore)) { toast.error("See More URL must start with http:// or https://"); return; }
     if (newMedia.length > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files allowed`); return; }
 
     const media = newMedia.length > 0 ? await uploadFiles(newMedia) : [];
@@ -126,6 +128,10 @@ const ProgrammesTab = () => {
   };
 
   const saveEdit = async (id: string) => {
+    if (editForm.see_more_url && !isSafeUrl(editForm.see_more_url)) {
+      toast.error("See More URL must start with http:// or https://");
+      return;
+    }
     const { error } = await supabase.from("programmes").update({
       title: editForm.title,
       description: editForm.description || null,

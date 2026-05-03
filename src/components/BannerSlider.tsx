@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { imgUrl } from "@/lib/image";
+import { isSafeUrl } from "@/lib/utils";
 
 const useBanners = () =>
   useQuery({
@@ -44,7 +45,7 @@ const BannerSlider = () => {
     );
     return (
       <section className="w-full">
-        {b.link_url ? (
+        {b.link_url && isSafeUrl(b.link_url) ? (
           <a href={b.link_url} target="_blank" rel="noopener noreferrer">{img}</a>
         ) : img}
       </section>
@@ -72,7 +73,7 @@ const BannerSlider = () => {
             );
             return (
               <CarouselItem key={b.id} className="pl-0">
-                {b.link_url ? (
+                {b.link_url && isSafeUrl(b.link_url) ? (
                   <a href={b.link_url} target="_blank" rel="noopener noreferrer">{img}</a>
                 ) : img}
               </CarouselItem>

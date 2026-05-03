@@ -68,12 +68,8 @@ const Admin = () => {
   }, [user, isAdmin, loading, navigate]);
 
   const handleSignOut = async () => {
-    if (user) {
-      // Delete profile on sign out so user is removed from the list
-      await supabase.from("profiles").delete().eq("user_id", user.id);
-      // Also remove any roles
-      await supabase.from("user_roles").delete().eq("user_id", user.id);
-    }
+    // Sign-out should NOT delete the user's profile or roles.
+    // Removing roles here would let the sole admin permanently lock themselves out.
     await signOut();
     navigate("/");
   };
