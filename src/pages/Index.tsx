@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
@@ -25,10 +26,20 @@ const Index = () => {
   const banners = useBannersForGate();
   const streams = useLiveStreams();
 
-  const isInitialLoading =
-    settings.isLoading || banners.isLoading || streams.isLoading;
+  // Consider a query "settled" if it has data, errored, or finished fetching.
+  const settled = (q: { isLoading: boolean; isError: boolean; data: unknown }) =>
+    !q.isLoading || q.isError || q.data !== undefined;
 
-  if (isInitialLoading) {
+  const allSettled = settled(settings) && settled(banners) && settled(streams);
+
+  // Hard cap: never block the page longer than 1.5s
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setTimedOut(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!allSettled && !timedOut) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
