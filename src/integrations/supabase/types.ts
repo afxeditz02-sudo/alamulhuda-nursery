@@ -127,10 +127,12 @@ export type Database = {
           id: string
           is_live: boolean
           is_published: boolean
+          media_type: string
           scheduled_at: string | null
           sort_order: number | null
           thumbnail_url: string | null
           title: string
+          video_url: string | null
           youtube_url: string
         }
         Insert: {
@@ -140,10 +142,12 @@ export type Database = {
           id?: string
           is_live?: boolean
           is_published?: boolean
+          media_type?: string
           scheduled_at?: string | null
           sort_order?: number | null
           thumbnail_url?: string | null
           title: string
+          video_url?: string | null
           youtube_url: string
         }
         Update: {
@@ -153,10 +157,12 @@ export type Database = {
           id?: string
           is_live?: boolean
           is_published?: boolean
+          media_type?: string
           scheduled_at?: string | null
           sort_order?: number | null
           thumbnail_url?: string | null
           title?: string
+          video_url?: string | null
           youtube_url?: string
         }
         Relationships: []
