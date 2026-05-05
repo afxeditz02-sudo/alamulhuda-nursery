@@ -228,11 +228,24 @@ const CustomVideoPlayer = ({ src, type, poster, title, autoPlay = false }: Custo
         </div>
       )}
 
-      {/* Top-right block to cover YouTube share/title hover area */}
+      {/* Overlays to hide YouTube branding (title bar top, logo bottom-right, watermark) */}
       {started && type === "youtube" && (
         <>
-          <div className="absolute top-0 right-0 h-16 w-32 bg-transparent pointer-events-auto" onClick={togglePlay} />
-          <div className="absolute top-0 left-0 h-16 right-32 bg-transparent pointer-events-auto" onClick={togglePlay} />
+          {/* Top bar covering title + share */}
+          <div
+            className="absolute top-0 left-0 right-0 h-16 bg-transparent cursor-pointer"
+            onClick={togglePlay}
+          />
+          {/* Bottom-right YouTube logo cover */}
+          <div
+            className="absolute bottom-0 right-0 h-12 w-28 bg-black cursor-pointer"
+            onClick={togglePlay}
+          />
+          {/* Center click area */}
+          <div
+            className="absolute top-16 left-0 right-0 bottom-12 bg-transparent cursor-pointer"
+            onClick={togglePlay}
+          />
         </>
       )}
 
