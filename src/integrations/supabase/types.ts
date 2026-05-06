@@ -132,6 +132,7 @@ export type Database = {
           sort_order: number | null
           thumbnail_url: string | null
           title: string
+          total_views: number
           video_url: string | null
           youtube_url: string
         }
@@ -147,6 +148,7 @@ export type Database = {
           sort_order?: number | null
           thumbnail_url?: string | null
           title: string
+          total_views?: number
           video_url?: string | null
           youtube_url: string
         }
@@ -162,6 +164,7 @@ export type Database = {
           sort_order?: number | null
           thumbnail_url?: string | null
           title?: string
+          total_views?: number
           video_url?: string | null
           youtube_url?: string
         }
@@ -391,6 +394,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_live_stream_views: {
+        Args: { _stream_id: string }
+        Returns: undefined
       }
     }
     Enums: {
