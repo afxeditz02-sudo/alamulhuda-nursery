@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, Radio, Pencil, Upload, Video as VideoIcon, FileVideo } from "lucide-react";
+import { Plus, Trash2, Radio, Pencil, Upload, Video as VideoIcon, FileVideo, Eye } from "lucide-react";
 import { useConfirm } from "@/hooks/useConfirm";
 import { isSafeUrl } from "@/lib/utils";
 
