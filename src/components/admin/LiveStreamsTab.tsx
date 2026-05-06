@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, Radio, Pencil, Upload, Video as VideoIcon, FileVideo } from "lucide-react";
+import { Plus, Trash2, Radio, Pencil, Upload, Video as VideoIcon, FileVideo, Eye } from "lucide-react";
 import { useConfirm } from "@/hooks/useConfirm";
 import { isSafeUrl } from "@/lib/utils";
 
@@ -332,6 +332,10 @@ const LiveStreamsTab = () => {
                       </span>
                     )}
                     <p className="font-semibold truncate">{s.title}</p>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                      <Eye className="h-3.5 w-3.5" />
+                      <span className="font-medium tabular-nums">{(s.total_views || 0).toLocaleString()} total views</span>
+                    </div>
                     {s.video_url && <p className="text-xs text-muted-foreground mt-1">📁 Uploaded video</p>}
                     {s.youtube_url && !s.video_url && (
                       <p className="text-xs text-muted-foreground break-all mt-1 line-clamp-2">{s.youtube_url}</p>
