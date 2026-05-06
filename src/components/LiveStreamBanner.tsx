@@ -80,6 +80,7 @@ const extractIdFromEmbed = (embed: string): string | null => {
 
 const LiveStreamBanner = () => {
   const { data: streams } = useLiveStreams();
+  const queryClient = useQueryClient();
   const now = new Date();
 
   const activeStreams = (streams || []).filter((s: any) => {
@@ -89,52 +90,25 @@ const LiveStreamBanner = () => {
     return false;
   });
 
+  useEffect(() => {
+    if (activeStreams.length === 0) return;
+    const channel = supabase
+      .channel("live_streams_views")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "live_streams" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["live_streams"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeStreams.length, queryClient]);
+
   if (activeStreams.length === 0) return null;
 
   return (
     <section id="live-stream" className="bg-background py-4">
       <div className="container mx-auto px-4 space-y-6">
-        {activeStreams.map((stream: any) => {
-          const hasVideo = !!stream.video_url;
-          const videoId = hasVideo ? null : (extractYouTubeId(stream.youtube_url || "") || extractIdFromEmbed(stream.embed_code || ""));
-          const playerSrc = hasVideo
-            ? stream.video_url
-            : (videoId ? `https://www.youtube.com/watch?v=${videoId}` : "");
-          const poster =
-            (stream.thumbnail_url && imgUrl(stream.thumbnail_url, 1000)) ||
-            (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : undefined);
-
-          if (!hasVideo && !videoId) return null;
-
-          return (
-            <div key={stream.id} className="max-w-3xl mx-auto">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video">
-                <CustomVideoPlayer
-                  src={playerSrc}
-                  type={hasVideo ? "video" : "youtube"}
-                  poster={poster}
-                  title={stream.title}
-                />
-
-                {/* LIVE NOW badge */}
-                <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-background/95 backdrop-blur px-3 py-1.5 rounded-full shadow-lg pointer-events-none">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive"></span>
-                  </span>
-                  <span className="text-xs font-bold tracking-wider text-foreground">LIVE NOW</span>
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <h3 className="font-semibold text-base md:text-lg text-foreground flex items-center gap-2">
-                  <Radio className="h-4 w-4 text-destructive" />
-                  {stream.title}
-                </h3>
-              </div>
-            </div>
-          );
-        })}
+        {activeStreams.map((stream: any) => (
+          <StreamCard key={stream.id} stream={stream} />
+        ))}
       </div>
     </section>
   );
