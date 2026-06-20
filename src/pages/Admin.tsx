@@ -285,15 +285,7 @@ const FeaturesTab = () => {
         <CardHeader><CardTitle>Features</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {(features || []).map((f) => (
-            <div key={f.id} className="flex items-center gap-2 p-3 border rounded">
-              <div className="flex-1">
-                <p className="font-medium">{f.title}</p>
-                {f.description && <p className="text-sm text-muted-foreground">{f.description}</p>}
-              </div>
-              <Button variant="destructive" size="icon" onClick={() => confirm("Delete this feature?", () => deleteFeature(f.id))}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+            <FeatureRow key={f.id} feature={f} onDelete={() => confirm("Delete this feature?", () => deleteFeature(f.id))} />
           ))}
           <div className="border-t pt-4 space-y-2">
             <Input placeholder="Feature title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
@@ -304,6 +296,51 @@ const FeaturesTab = () => {
       </Card>
       <ConfirmDialog />
     </>
+  );
+};
+
+const FeatureRow = ({ feature, onDelete }: { feature: { id: string; title: string; description: string | null }; onDelete: () => void }) => {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(feature.title);
+  const [desc, setDesc] = useState(feature.description || "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!title.trim()) { toast.error("Title required"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("features").update({ title, description: desc || null }).eq("id", feature.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Feature updated");
+    queryClient.invalidateQueries({ queryKey: ["features"] });
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="space-y-2 p-3 border rounded">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+        <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Description" />
+        <div className="flex gap-2">
+          <Button size="sm" onClick={save} disabled={saving}><Save className="h-4 w-4 mr-1" /> Save</Button>
+          <Button size="sm" variant="outline" onClick={() => { setTitle(feature.title); setDesc(feature.description || ""); setEditing(false); }}>Cancel</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 p-3 border rounded">
+      <div className="flex-1">
+        <p className="font-medium">{feature.title}</p>
+        {feature.description && <p className="text-sm text-muted-foreground">{feature.description}</p>}
+      </div>
+      <Button variant="outline" size="sm" onClick={() => setEditing(true)}>Edit</Button>
+      <Button variant="destructive" size="icon" onClick={onDelete}>
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
   );
 };
 
