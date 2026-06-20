@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProgrammes, useSiteSettings } from "@/hooks/useSiteData";
@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, Edit2, X, FileText, Film, Image as ImageIcon, CalendarClock, Upload, Replace } from "lucide-react";
+import { Plus, Trash2, Save, Edit2, X, FileText, Film, Image as ImageIcon, CalendarClock, Upload, Replace, Play, Pause, Clock } from "lucide-react";
 import { useConfirm } from "@/hooks/useConfirm";
 import { isSafeUrl } from "@/lib/utils";
+import { useUploadJobs, formatBytes, formatDuration, type UploadJob } from "@/hooks/useUploadJobs";
 
 const generateYears = () => {
   const years = [];
@@ -30,6 +31,7 @@ const ProgrammesTab = () => {
   const { data: settings } = useSiteSettings();
   const queryClient = useQueryClient();
   const { confirm, ConfirmDialog } = useConfirm();
+  const { jobs, startJob, pauseJob, resumeJob, cancelJob } = useUploadJobs("site-images", "programmes");
 
   const primaryYear = (settings as any)?.primary_programmes_year || "2025-26";
 
@@ -58,35 +60,26 @@ const ProgrammesTab = () => {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["programmes", selectedYear] });
 
-  const getFileType = (file: File): "image" | "video" | "file" => {
-    if (file.type.startsWith("image/")) return "image";
-    if (file.type.startsWith("video/")) return "video";
-    const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "heic"].includes(ext)) return "image";
-    if (["mp4", "mov", "avi", "mkv", "webm", "3gp", "m4v", "wmv"].includes(ext)) return "video";
-    return "file";
+  // Append a freshly-uploaded media item to a programme row
+  const appendMediaToRow = async (programmeId: string, item: MediaItem) => {
+    const { data: row } = await supabase.from("programmes").select("media,image_url").eq("id", programmeId).single();
+    const existing: MediaItem[] = Array.isArray((row as any)?.media) ? ((row as any).media as MediaItem[]) : [];
+    const updated = [...existing, item];
+    const imageUrl = (row as any)?.image_url || updated.find((m) => m.type === "image")?.url || null;
+    await supabase.from("programmes").update({ media: updated as any, image_url: imageUrl }).eq("id", programmeId);
+    invalidate();
   };
 
-  const uploadFiles = async (files: File[]): Promise<MediaItem[]> => {
-    const items: MediaItem[] = [];
-    for (const file of files) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `programmes/${Date.now()}-${safeName}`;
-      toast.info(`Uploading ${file.name}...`);
-      const { error } = await supabase.storage.from("site-images").upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-      if (error) {
-        console.error("Upload error:", error);
-        toast.error(`Upload failed: ${file.name} — ${error.message}`);
-        continue;
-      }
-      const { data: { publicUrl } } = supabase.storage.from("site-images").getPublicUrl(path);
-      const type = getFileType(file);
-      items.push({ url: publicUrl, type, name: file.name });
+  const replaceMediaOnRow = async (programmeId: string, item: MediaItem, isFirst: boolean) => {
+    if (isFirst) {
+      await supabase.from("programmes").update({
+        media: [item] as any,
+        image_url: item.type === "image" ? item.url : null,
+      }).eq("id", programmeId);
+    } else {
+      await appendMediaToRow(programmeId, item);
     }
-    return items;
+    invalidate();
   };
 
   const addProgramme = async () => {
@@ -94,21 +87,34 @@ const ProgrammesTab = () => {
     if (seeMore && !isSafeUrl(seeMore)) { toast.error("See More URL must start with http:// or https://"); return; }
     if (newMedia.length > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files allowed`); return; }
 
-    const media = newMedia.length > 0 ? await uploadFiles(newMedia) : [];
-    const imageUrl = media.find(m => m.type === "image")?.url || null;
-
-    const { error } = await supabase.from("programmes").insert({
+    // Insert programme row first so we have an ID to attach uploads to
+    const { data: inserted, error } = await supabase.from("programmes").insert({
       year: selectedYear, title, description: desc || null,
-      image_url: imageUrl, see_more_url: seeMore || null,
+      image_url: null, see_more_url: seeMore || null,
       sort_order: (programmes?.length || 0) + 1,
-      media: media as any,
+      media: [] as any,
       scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       is_published: isPublished,
-    });
-    if (error) { toast.error(error.message); return; }
+    }).select("id").single();
+    if (error || !inserted) { toast.error(error?.message || "Failed"); return; }
+
+    const programmeId = (inserted as any).id as string;
+    const filesToUpload = newMedia.slice(0, MAX_MEDIA);
+    const savedTitle = title;
     setTitle(""); setDesc(""); setSeeMore(""); setScheduledAt(""); setIsPublished(true); setNewMedia([]);
     toast.success("Programme added!");
     invalidate();
+
+    if (filesToUpload.length > 0) {
+      startJob({
+        id: programmeId,
+        label: savedTitle,
+        files: filesToUpload,
+        onFileDone: async (f) => {
+          await appendMediaToRow(programmeId, { url: f.url!, type: f.type, name: f.name });
+        },
+      });
+    }
   };
 
   const deleteProgramme = async (id: string) => {
@@ -145,19 +151,19 @@ const ProgrammesTab = () => {
     invalidate();
   };
 
-  const replaceMedia = async (id: string, files: FileList | null, existingMedia: MediaItem[]) => {
+  const replaceMedia = (id: string, files: FileList | null, label: string) => {
     if (!files || files.length === 0) return;
-    const fileArr = Array.from(files);
-    if (fileArr.length > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files`); return; }
-    const media = await uploadFiles(fileArr);
-    const imageUrl = media.find(m => m.type === "image")?.url || null;
-    const { error } = await supabase.from("programmes").update({
-      media: media as any,
-      image_url: imageUrl,
-    }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Media replaced!");
-    invalidate();
+    const fileArr = Array.from(files).slice(0, MAX_MEDIA);
+    let first = true;
+    startJob({
+      id: `${id}:replace:${Date.now()}`,
+      label: `Replace — ${label}`,
+      files: fileArr,
+      onFileDone: async (f) => {
+        await replaceMediaOnRow(id, { url: f.url!, type: f.type, name: f.name }, first);
+        first = false;
+      },
+    });
   };
 
   const removeMediaItem = async (id: string, media: MediaItem[], index: number) => {
@@ -172,27 +178,80 @@ const ProgrammesTab = () => {
     invalidate();
   };
 
-  const addMediaToExisting = async (id: string, files: FileList | null, existingMedia: MediaItem[]) => {
+  const addMediaToExisting = (id: string, files: FileList | null, existingMedia: MediaItem[], label: string) => {
     if (!files || files.length === 0) return;
     const fileArr = Array.from(files);
     const total = existingMedia.length + fileArr.length;
     if (total > MAX_MEDIA) { toast.error(`Max ${MAX_MEDIA} files. Currently ${existingMedia.length}.`); return; }
-    const newItems = await uploadFiles(fileArr);
-    const allMedia = [...existingMedia, ...newItems];
-    const imageUrl = allMedia.find(m => m.type === "image")?.url || null;
-    const { error } = await supabase.from("programmes").update({
-      media: allMedia as any,
-      image_url: imageUrl,
-    }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Media added!");
-    invalidate();
+    startJob({
+      id: `${id}:add:${Date.now()}`,
+      label: `Add — ${label}`,
+      files: fileArr,
+      onFileDone: async (f) => {
+        await appendMediaToRow(id, { url: f.url!, type: f.type, name: f.name });
+      },
+    });
   };
 
   const getMediaIcon = (type: string) => {
     if (type === "image") return <ImageIcon className="h-4 w-4" />;
     if (type === "video") return <Film className="h-4 w-4" />;
     return <FileText className="h-4 w-4" />;
+  };
+
+  // Find an upload job for a given programme id (either initial-create job or add/replace)
+  const findJobsForProgramme = (programmeId: string): UploadJob[] =>
+    Object.values(jobs).filter((j) => j.id === programmeId || j.id.startsWith(`${programmeId}:`));
+
+  const renderJobCard = (job: UploadJob) => {
+    const totalBytes = job.files.reduce((s, f) => s + f.size, 0) || 1;
+    const uploadedBytes = job.files.reduce((s, f) => s + f.uploaded, 0);
+    const pct = Math.min(100, Math.round((uploadedBytes / totalBytes) * 100));
+    const speed = job.elapsedMs > 500 ? uploadedBytes / (job.elapsedMs / 1000) : 0;
+    const remainingBytes = Math.max(0, totalBytes - uploadedBytes);
+    const eta = speed > 0 ? formatDuration((remainingBytes / speed) * 1000) : "—";
+
+    return (
+      <div key={job.id} className="rounded-lg border-2 border-primary/40 bg-primary/5 p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm font-semibold text-primary">
+            Uploading .... {pct}%
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="h-3 w-3" /> {formatDuration(job.elapsedMs)}
+          </div>
+        </div>
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{formatBytes(uploadedBytes)} / {formatBytes(totalBytes)}</span>
+          <span>{job.status === "uploading" && speed > 0 ? `${formatBytes(speed)}/s · ETA ${eta}` : job.status === "paused" ? "Paused" : ""}</span>
+        </div>
+        <div className="flex gap-2 pt-1">
+          {job.status === "uploading" ? (
+            <Button variant="outline" size="sm" onClick={() => pauseJob(job.id)}>
+              <Pause className="h-4 w-4 mr-1" /> Pause
+            </Button>
+          ) : job.status === "paused" ? (
+            <Button variant="outline" size="sm" onClick={() => resumeJob(job.id)}>
+              <Play className="h-4 w-4 mr-1" /> Resume
+            </Button>
+          ) : null}
+          {job.status !== "done" && (
+            <Button variant="ghost" size="sm" onClick={() => confirm("Cancel this upload?", () => cancelJob(job.id))}>
+              <X className="h-4 w-4 mr-1" /> Cancel
+            </Button>
+          )}
+          {job.status === "done" && (
+            <span className="text-xs text-green-600 font-medium self-center">Completed</span>
+          )}
+        </div>
+        <div className="text-[10px] text-muted-foreground">
+          {job.files.length} file(s) · {job.files.filter(f => f.status === "done").length} done
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -226,6 +285,7 @@ const ProgrammesTab = () => {
           {(programmes || []).map((p) => {
             const media: MediaItem[] = Array.isArray(p.media) ? (p.media as any) : [];
             const isEditing = editingId === p.id;
+            const activeJobs = findJobsForProgramme(p.id);
 
             return (
               <div key={p.id} className="p-4 border rounded-lg space-y-3">
@@ -267,6 +327,8 @@ const ProgrammesTab = () => {
                   </div>
                 )}
 
+                {activeJobs.map(renderJobCard)}
+
                 <div className="border-t pt-3">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Media ({media.length}/{MAX_MEDIA})</p>
                   {media.length > 0 && (
@@ -292,7 +354,7 @@ const ProgrammesTab = () => {
                           <span><Upload className="h-3 w-3 mr-1" /> Add Files</span>
                         </Button>
                         <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
-                          onChange={(e) => addMediaToExisting(p.id, e.target.files, media)} />
+                          onChange={(e) => { addMediaToExisting(p.id, e.target.files, media, p.title); e.currentTarget.value = ""; }} />
                       </label>
                     )}
                     <label className="cursor-pointer">
@@ -300,7 +362,7 @@ const ProgrammesTab = () => {
                         <span><Replace className="h-3 w-3 mr-1" /> Replace All</span>
                       </Button>
                       <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.mp4,.mov,.avi,.mkv,.3gp,.webm" className="hidden"
-                        onChange={(e) => replaceMedia(p.id, e.target.files, media)} />
+                        onChange={(e) => { replaceMedia(p.id, e.target.files, p.title); e.currentTarget.value = ""; }} />
                     </label>
                   </div>
                 </div>
@@ -334,7 +396,7 @@ const ProgrammesTab = () => {
                   setNewMedia(files);
                 }} />
               {newMedia.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">{newMedia.length} file(s) selected</p>
+                <p className="text-xs text-muted-foreground mt-1">{newMedia.length} file(s) selected · {formatBytes(newMedia.reduce((s,f)=>s+f.size,0))}</p>
               )}
             </div>
 
