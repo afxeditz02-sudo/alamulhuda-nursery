@@ -81,9 +81,28 @@ const AdmissionSlider = () => {
         <p className="text-lg text-muted-foreground mt-8">
           {settings?.admission_text || "to get more info and admission"}
         </p>
-        <Button size="lg" className="mt-4 text-lg px-8 font-bold">
-          {settings?.admission_button_text || "CLICK HERE"}
-        </Button>
+        {(() => {
+          const link = (settings as any)?.admission_button_link?.trim();
+          const label = settings?.admission_button_text || "CLICK HERE";
+          if (link) {
+            const external = /^https?:\/\//i.test(link);
+            return (
+              <Button asChild size="lg" className="mt-4 text-lg px-8 font-bold">
+                <a
+                  href={link}
+                  target={external ? "_blank" : undefined}
+                  rel={external ? "noopener noreferrer" : undefined}
+                >
+                  {label}
+                </a>
+              </Button>
+            );
+          }
+          return (
+            <Button size="lg" className="mt-4 text-lg px-8 font-bold">{label}</Button>
+          );
+        })()}
+
       </div>
     </section>
   );
