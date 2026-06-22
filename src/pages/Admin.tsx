@@ -216,20 +216,9 @@ const SiteSettingsTab = () => {
 
   const fields = [
     { key: "school_name", label: "School Name" },
-    { key: "tagline", label: "Tagline" },
-    { key: "features_heading", label: "Features Heading" },
-    { key: "admission_heading", label: "Admission Heading" },
-    { key: "admission_text", label: "Admission Text" },
-    { key: "admission_button_text", label: "Admission Button Text" },
-    { key: "analysis_heading", label: "Analysis Heading" },
     { key: "programmes_heading", label: "Programmes Heading" },
-    { key: "footer_copyright", label: "Footer Copyright" },
-    { key: "footer_managed_by", label: "Footer Managed By" },
-    { key: "footer_estd", label: "Footer Estd" },
-    { key: "footer_reg", label: "Footer Reg & Phone" },
-    { key: "footer_under", label: "Footer Under" },
-    { key: "footer_run_by", label: "Footer Run By" },
   ];
+
 
   return (
     <Card>
