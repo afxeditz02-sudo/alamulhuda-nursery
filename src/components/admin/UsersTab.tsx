@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,7 @@ interface UserProfile {
   user_id: string;
   full_name: string;
   avatar_url: string | null;
+  email: string | null;
   is_removed: boolean;
   created_at: string | null;
 }
@@ -56,6 +57,11 @@ const useAllRoles = () =>
     },
   });
 
+const displayName = (p: UserProfile) =>
+  (p.full_name && p.full_name.trim()) ||
+  (p.email ? p.email.split("@")[0] : "") ||
+  "Unknown";
+
 const UsersTab = () => {
   const { data: profiles, isLoading } = useAllProfiles();
   const { data: roles } = useAllRoles();
@@ -66,19 +72,14 @@ const UsersTab = () => {
     name: string;
   } | null>(null);
 
-  const getRoles = (userId: string) =>
-    (roles || []).filter((r) => r.user_id === userId).map((r) => r.role);
-
-  const isUserAdmin = (userId: string) => getRoles(userId).includes("admin");
+  const adminIds = new Set((roles || []).filter((r) => r.role === "admin").map((r) => r.user_id));
+  const isUserAdmin = (userId: string) => adminIds.has(userId);
 
   const handleMakeAdmin = async (userId: string) => {
     const { error } = await supabase
       .from("user_roles")
       .insert({ user_id: userId, role: "admin" });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) return toast.error(error.message);
     toast.success("User promoted to admin!");
     queryClient.invalidateQueries({ queryKey: ["admin_user_roles"] });
   };
@@ -89,10 +90,7 @@ const UsersTab = () => {
       .delete()
       .eq("user_id", userId)
       .eq("role", "admin");
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) return toast.error(error.message);
     toast.success("Admin role removed!");
     queryClient.invalidateQueries({ queryKey: ["admin_user_roles"] });
   };
@@ -102,16 +100,8 @@ const UsersTab = () => {
       .from("profiles")
       .update({ is_removed: true, removed_at: new Date().toISOString() })
       .eq("user_id", userId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    // Also remove admin role if they have one
-    await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", userId)
-      .eq("role", "admin");
+    if (error) return toast.error(error.message);
+    await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
     toast.success("User removed!");
     queryClient.invalidateQueries({ queryKey: ["admin_profiles"] });
     queryClient.invalidateQueries({ queryKey: ["admin_user_roles"] });
@@ -122,10 +112,7 @@ const UsersTab = () => {
       .from("profiles")
       .update({ is_removed: false, removed_at: null })
       .eq("user_id", userId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) return toast.error(error.message);
     toast.success("User restored!");
     queryClient.invalidateQueries({ queryKey: ["admin_profiles"] });
   };
@@ -133,20 +120,10 @@ const UsersTab = () => {
   const executeAction = () => {
     if (!confirmAction) return;
     const { type, userId } = confirmAction;
-    switch (type) {
-      case "make_admin":
-        handleMakeAdmin(userId);
-        break;
-      case "remove_admin":
-        handleRemoveAdmin(userId);
-        break;
-      case "remove":
-        handleRemoveUser(userId);
-        break;
-      case "restore":
-        handleRestoreUser(userId);
-        break;
-    }
+    if (type === "make_admin") handleMakeAdmin(userId);
+    else if (type === "remove_admin") handleRemoveAdmin(userId);
+    else if (type === "remove") handleRemoveUser(userId);
+    else if (type === "restore") handleRestoreUser(userId);
     setConfirmAction(null);
   };
 
@@ -166,7 +143,8 @@ const UsersTab = () => {
     }
   };
 
-  const activeUsers = (profiles || []).filter((p) => !p.is_removed);
+  const activeProfiles = (profiles || []).filter((p) => !p.is_removed);
+  const adminProfiles = activeProfiles.filter((p) => isUserAdmin(p.user_id));
   const removedUsers = (profiles || []).filter((p) => p.is_removed);
 
   if (isLoading) {
@@ -179,88 +157,93 @@ const UsersTab = () => {
     );
   }
 
+  const renderRow = (profile: UserProfile, isAdmin: boolean) => {
+    const name = displayName(profile);
+    return (
+      <div
+        key={profile.id}
+        className="flex items-center gap-3 p-3 border rounded-lg bg-card"
+      >
+        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+          {name[0]?.toUpperCase() || "?"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">{name}</p>
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {isAdmin && <Badge variant="default" className="text-xs">Admin</Badge>}
+            <Badge variant="secondary" className="text-xs">User</Badge>
+          </div>
+          {profile.email && (
+            <p className="text-xs text-muted-foreground truncate mt-0.5">{profile.email}</p>
+          )}
+        </div>
+        <div className="flex gap-1 flex-shrink-0">
+          {isAdmin ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setConfirmAction({ type: "remove_admin", userId: profile.user_id, name })
+              }
+              title="Remove Admin"
+            >
+              <ShieldOff className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setConfirmAction({ type: "make_admin", userId: profile.user_id, name })
+              }
+              title="Make Admin"
+            >
+              <Shield className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() =>
+              setConfirmAction({ type: "remove", userId: profile.user_id, name })
+            }
+            title="Remove User"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5" /> Active Users ({activeUsers.length})
+              <UserCheck className="h-5 w-5" /> Admins ({adminProfiles.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {activeUsers.length === 0 && (
+            {adminProfiles.length === 0 && (
+              <p className="text-muted-foreground text-sm">No admins yet.</p>
+            )}
+            {adminProfiles.map((p) => renderRow(p, true))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" /> Active Users ({activeProfiles.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {activeProfiles.length === 0 && (
               <p className="text-muted-foreground text-sm">No active users found.</p>
             )}
-            {activeUsers.map((profile) => {
-              const admin = isUserAdmin(profile.user_id);
-              return (
-                <div
-                  key={profile.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg"
-                >
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                    {profile.full_name?.[0]?.toUpperCase() || "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{profile.full_name || "No Name"}</p>
-                    <div className="flex gap-1 mt-1">
-                      {admin && (
-                        <Badge variant="default" className="text-xs">Admin</Badge>
-                      )}
-                      <Badge variant="secondary" className="text-xs">User</Badge>
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    {admin ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setConfirmAction({
-                            type: "remove_admin",
-                            userId: profile.user_id,
-                            name: profile.full_name,
-                          })
-                        }
-                        title="Remove Admin"
-                      >
-                        <ShieldOff className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setConfirmAction({
-                            type: "make_admin",
-                            userId: profile.user_id,
-                            name: profile.full_name,
-                          })
-                        }
-                        title="Make Admin"
-                      >
-                        <Shield className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() =>
-                        setConfirmAction({
-                          type: "remove",
-                          userId: profile.user_id,
-                          name: profile.full_name,
-                        })
-                      }
-                      title="Remove User"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+            {activeProfiles.map((p) => renderRow(p, isUserAdmin(p.user_id)))}
           </CardContent>
         </Card>
 
@@ -272,33 +255,35 @@ const UsersTab = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {removedUsers.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="flex items-center gap-3 p-3 border border-destructive/20 rounded-lg bg-destructive/5"
-                >
-                  <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center text-destructive font-bold text-sm">
-                    {profile.full_name?.[0]?.toUpperCase() || "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{profile.full_name || "No Name"}</p>
-                    <Badge variant="destructive" className="text-xs mt-1">Removed</Badge>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setConfirmAction({
-                        type: "restore",
-                        userId: profile.user_id,
-                        name: profile.full_name,
-                      })
-                    }
+              {removedUsers.map((profile) => {
+                const name = displayName(profile);
+                return (
+                  <div
+                    key={profile.id}
+                    className="flex items-center gap-3 p-3 border border-destructive/20 rounded-lg bg-destructive/5"
                   >
-                    Restore
-                  </Button>
-                </div>
-              ))}
+                    <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center text-destructive font-bold text-sm">
+                      {name[0]?.toUpperCase() || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{name}</p>
+                      {profile.email && (
+                        <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
+                      )}
+                      <Badge variant="destructive" className="text-xs mt-1">Removed</Badge>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setConfirmAction({ type: "restore", userId: profile.user_id, name })
+                      }
+                    >
+                      Restore
+                    </Button>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         )}
