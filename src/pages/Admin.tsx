@@ -244,6 +244,68 @@ const SiteSettingsTab = () => {
   );
 };
 
+const SettingsFieldsCard = ({
+  title,
+  fields,
+}: {
+  title: string;
+  fields: { key: string; label: string; multiline?: boolean; placeholder?: string }[];
+}) => {
+  const { data: settings } = useSiteSettings();
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      const next: Record<string, string> = {};
+      fields.forEach((f) => {
+        next[f.key] = ((settings as any)[f.key] as string) || "";
+      });
+      setForm(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+
+  const save = async () => {
+    if (!settings?.id) return;
+    setSaving(true);
+    const { error } = await supabase.from("site_settings").update(form as any).eq("id", settings.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Saved!");
+    queryClient.invalidateQueries({ queryKey: ["site_settings"] });
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        {fields.map((f) => (
+          <div key={f.key}>
+            <label className="text-sm font-medium">{f.label}</label>
+            {f.multiline ? (
+              <Textarea
+                rows={5}
+                placeholder={f.placeholder}
+                value={form[f.key] || ""}
+                onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
+              />
+            ) : (
+              <Input
+                placeholder={f.placeholder}
+                value={form[f.key] || ""}
+                onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
+              />
+            )}
+          </div>
+        ))}
+        <Button onClick={save} disabled={saving}><Save className="h-4 w-4 mr-1" /> Save</Button>
+      </CardContent>
+    </Card>
+  );
+};
+
 const FeaturesTab = () => {
   const { data: features } = useFeatures();
   const queryClient = useQueryClient();
@@ -270,6 +332,13 @@ const FeaturesTab = () => {
 
   return (
     <>
+      <SettingsFieldsCard
+        title="Features Heading & Tagline"
+        fields={[
+          { key: "features_heading", label: "Features Heading" },
+          { key: "tagline", label: "Tagline" },
+        ]}
+      />
       <Card>
         <CardHeader><CardTitle>Features</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -287,6 +356,7 @@ const FeaturesTab = () => {
     </>
   );
 };
+
 
 const FeatureRow = ({ feature, onDelete }: { feature: { id: string; title: string; description: string | null }; onDelete: () => void }) => {
   const queryClient = useQueryClient();
