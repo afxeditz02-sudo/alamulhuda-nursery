@@ -112,13 +112,41 @@ const Admin = () => {
     { key: "users", label: "Users", icon: ShieldCheck, render: () => <UsersTab /> },
     { key: "features", label: "Features", icon: ListChecks, render: () => <FeaturesTab /> },
     { key: "admission", label: "Addmission & calculation", icon: School, render: () => (
-      <div className="space-y-6"><SliderTab /><AnalysisTab /></div>
+      <div className="space-y-6">
+        <SettingsFieldsCard
+          title="Admission Section"
+          fields={[
+            { key: "admission_heading", label: "Admission Heading" },
+            { key: "admission_text", label: "Admission Text" },
+            { key: "admission_button_text", label: "Admission Button Text" },
+            { key: "admission_button_link", label: "Admission Button Link (URL)", placeholder: "https://example.com or /path" },
+          ]}
+        />
+        <SliderTab />
+        <SettingsFieldsCard
+          title="Analysis Heading"
+          fields={[{ key: "analysis_heading", label: "Analysis Heading" }]}
+        />
+        <AnalysisTab />
+      </div>
     )},
     { key: "news", label: "News", icon: Newspaper, render: () => <ProgrammesTab /> },
     { key: "banner", label: "Banner", icon: GalleryHorizontalEnd, render: () => <BannersTab /> },
     { key: "live", label: "Live", icon: Radio, render: () => <LiveStreamsTab /> },
     { key: "tabs", label: "Tabs", icon: AppWindow, render: () => <TabsPagesTab /> },
-    { key: "footer", label: "Footer", icon: PanelBottom, render: () => <FooterLogosTab /> },
+    { key: "footer", label: "Footer", icon: PanelBottom, render: () => (
+      <div className="space-y-6">
+        <SettingsFieldsCard
+          title="Footer Text"
+          fields={[
+            { key: "footer_copyright", label: "Footer Copyright" },
+            { key: "footer_description", label: "Description", multiline: true, placeholder: "Write the footer paragraph here. Line breaks are preserved." },
+          ]}
+        />
+        <FooterLogosTab />
+      </div>
+    ) },
+
   ];
 
   const active = sections.find((s) => s.key === activeSection);
