@@ -112,13 +112,41 @@ const Admin = () => {
     { key: "users", label: "Users", icon: ShieldCheck, render: () => <UsersTab /> },
     { key: "features", label: "Features", icon: ListChecks, render: () => <FeaturesTab /> },
     { key: "admission", label: "Addmission & calculation", icon: School, render: () => (
-      <div className="space-y-6"><SliderTab /><AnalysisTab /></div>
+      <div className="space-y-6">
+        <SettingsFieldsCard
+          title="Admission Section"
+          fields={[
+            { key: "admission_heading", label: "Admission Heading" },
+            { key: "admission_text", label: "Admission Text" },
+            { key: "admission_button_text", label: "Admission Button Text" },
+            { key: "admission_button_link", label: "Admission Button Link (URL)", placeholder: "https://example.com or /path" },
+          ]}
+        />
+        <SliderTab />
+        <SettingsFieldsCard
+          title="Analysis Heading"
+          fields={[{ key: "analysis_heading", label: "Analysis Heading" }]}
+        />
+        <AnalysisTab />
+      </div>
     )},
     { key: "news", label: "News", icon: Newspaper, render: () => <ProgrammesTab /> },
     { key: "banner", label: "Banner", icon: GalleryHorizontalEnd, render: () => <BannersTab /> },
     { key: "live", label: "Live", icon: Radio, render: () => <LiveStreamsTab /> },
     { key: "tabs", label: "Tabs", icon: AppWindow, render: () => <TabsPagesTab /> },
-    { key: "footer", label: "Footer", icon: PanelBottom, render: () => <FooterLogosTab /> },
+    { key: "footer", label: "Footer", icon: PanelBottom, render: () => (
+      <div className="space-y-6">
+        <SettingsFieldsCard
+          title="Footer Text"
+          fields={[
+            { key: "footer_copyright", label: "Footer Copyright" },
+            { key: "footer_description", label: "Description", multiline: true, placeholder: "Write the footer paragraph here. Line breaks are preserved." },
+          ]}
+        />
+        <FooterLogosTab />
+      </div>
+    ) },
+
   ];
 
   const active = sections.find((s) => s.key === activeSection);
@@ -216,20 +244,9 @@ const SiteSettingsTab = () => {
 
   const fields = [
     { key: "school_name", label: "School Name" },
-    { key: "tagline", label: "Tagline" },
-    { key: "features_heading", label: "Features Heading" },
-    { key: "admission_heading", label: "Admission Heading" },
-    { key: "admission_text", label: "Admission Text" },
-    { key: "admission_button_text", label: "Admission Button Text" },
-    { key: "analysis_heading", label: "Analysis Heading" },
     { key: "programmes_heading", label: "Programmes Heading" },
-    { key: "footer_copyright", label: "Footer Copyright" },
-    { key: "footer_managed_by", label: "Footer Managed By" },
-    { key: "footer_estd", label: "Footer Estd" },
-    { key: "footer_reg", label: "Footer Reg & Phone" },
-    { key: "footer_under", label: "Footer Under" },
-    { key: "footer_run_by", label: "Footer Run By" },
   ];
+
 
   return (
     <Card>
@@ -250,6 +267,68 @@ const SiteSettingsTab = () => {
           </div>
         ))}
         <Button onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save Settings</Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+const SettingsFieldsCard = ({
+  title,
+  fields,
+}: {
+  title: string;
+  fields: { key: string; label: string; multiline?: boolean; placeholder?: string }[];
+}) => {
+  const { data: settings } = useSiteSettings();
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      const next: Record<string, string> = {};
+      fields.forEach((f) => {
+        next[f.key] = ((settings as any)[f.key] as string) || "";
+      });
+      setForm(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+
+  const save = async () => {
+    if (!settings?.id) return;
+    setSaving(true);
+    const { error } = await supabase.from("site_settings").update(form as any).eq("id", settings.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Saved!");
+    queryClient.invalidateQueries({ queryKey: ["site_settings"] });
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        {fields.map((f) => (
+          <div key={f.key}>
+            <label className="text-sm font-medium">{f.label}</label>
+            {f.multiline ? (
+              <Textarea
+                rows={5}
+                placeholder={f.placeholder}
+                value={form[f.key] || ""}
+                onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
+              />
+            ) : (
+              <Input
+                placeholder={f.placeholder}
+                value={form[f.key] || ""}
+                onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
+              />
+            )}
+          </div>
+        ))}
+        <Button onClick={save} disabled={saving}><Save className="h-4 w-4 mr-1" /> Save</Button>
       </CardContent>
     </Card>
   );
@@ -281,6 +360,13 @@ const FeaturesTab = () => {
 
   return (
     <>
+      <SettingsFieldsCard
+        title="Features Heading & Tagline"
+        fields={[
+          { key: "features_heading", label: "Features Heading" },
+          { key: "tagline", label: "Tagline" },
+        ]}
+      />
       <Card>
         <CardHeader><CardTitle>Features</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -298,6 +384,7 @@ const FeaturesTab = () => {
     </>
   );
 };
+
 
 const FeatureRow = ({ feature, onDelete }: { feature: { id: string; title: string; description: string | null }; onDelete: () => void }) => {
   const queryClient = useQueryClient();

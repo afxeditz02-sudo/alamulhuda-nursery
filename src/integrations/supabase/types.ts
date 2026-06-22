@@ -277,17 +277,14 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          admission_button_link: string | null
           admission_button_text: string | null
           admission_heading: string | null
           admission_text: string | null
           analysis_heading: string | null
           features_heading: string | null
           footer_copyright: string | null
-          footer_estd: string | null
-          footer_managed_by: string | null
-          footer_reg: string | null
-          footer_run_by: string | null
-          footer_under: string | null
+          footer_description: string | null
           id: string
           logo_url: string | null
           primary_analysis_year: string | null
@@ -298,17 +295,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admission_button_link?: string | null
           admission_button_text?: string | null
           admission_heading?: string | null
           admission_text?: string | null
           analysis_heading?: string | null
           features_heading?: string | null
           footer_copyright?: string | null
-          footer_estd?: string | null
-          footer_managed_by?: string | null
-          footer_reg?: string | null
-          footer_run_by?: string | null
-          footer_under?: string | null
+          footer_description?: string | null
           id?: string
           logo_url?: string | null
           primary_analysis_year?: string | null
@@ -319,17 +313,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admission_button_link?: string | null
           admission_button_text?: string | null
           admission_heading?: string | null
           admission_text?: string | null
           analysis_heading?: string | null
           features_heading?: string | null
           footer_copyright?: string | null
-          footer_estd?: string | null
-          footer_managed_by?: string | null
-          footer_reg?: string | null
-          footer_run_by?: string | null
-          footer_under?: string | null
+          footer_description?: string | null
           id?: string
           logo_url?: string | null
           primary_analysis_year?: string | null

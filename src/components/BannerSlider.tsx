@@ -31,20 +31,24 @@ const BannerSlider = () => {
 
   if (activeBanners.length === 0) return null;
 
+  // Responsive sizing: smaller/medium on tablet and laptop, full on mobile and large desktops.
+  const wrapperClass = "w-full max-w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto";
+  const imgClass = "w-full h-auto object-contain max-h-[180px] sm:max-h-[220px] md:max-h-[260px] lg:max-h-[320px] xl:max-h-[400px]";
+
   if (activeBanners.length === 1) {
     const b = activeBanners[0];
     const img = (
       <img
         src={imgUrl(b.image_url, 1400)}
         alt="Banner"
-        className="w-full h-auto object-contain"
+        className={imgClass}
         loading="eager"
         fetchPriority="high"
         decoding="async"
       />
     );
     return (
-      <section className="w-full">
+      <section className={wrapperClass}>
         {b.link_url && isSafeUrl(b.link_url) ? (
           <a href={b.link_url} target="_blank" rel="noopener noreferrer">{img}</a>
         ) : img}
@@ -53,7 +57,7 @@ const BannerSlider = () => {
   }
 
   return (
-    <section className="w-full">
+    <section className={wrapperClass}>
       <Carousel
         opts={{ loop: true }}
         plugins={[Autoplay({ delay: 4000, stopOnInteraction: true })]}
@@ -65,7 +69,7 @@ const BannerSlider = () => {
               <img
                 src={imgUrl(b.image_url, 1400)}
                 alt="Banner"
-                className="w-full h-auto object-contain"
+                className={imgClass}
                 loading={idx === 0 ? "eager" : "lazy"}
                 fetchPriority={idx === 0 ? "high" : "auto"}
                 decoding="async"
@@ -86,3 +90,4 @@ const BannerSlider = () => {
 };
 
 export default BannerSlider;
+
