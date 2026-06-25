@@ -63,24 +63,28 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
   }, []);
 
   const patchJob = useCallback((id: string, patch: Partial<UploadJob>) => {
-    setJobs((prev) => (prev[id] ? { ...prev, [id]: { ...prev[id], ...patch } } : prev));
+    const current = jobsRef.current;
+    if (!current[id]) return;
+    const next = { ...current, [id]: { ...current[id], ...patch } };
+    jobsRef.current = next;
+    setJobs(next);
   }, []);
 
   const patchFile = useCallback((id: string, idx: number, patch: Partial<JobFile>) => {
-    setJobs((prev) => {
-      const j = prev[id];
-      if (!j) return prev;
-      const files = j.files.map((f, i) => (i === idx ? { ...f, ...patch } : f));
-      return { ...prev, [id]: { ...j, files } };
-    });
+    const current = jobsRef.current;
+    const j = current[id];
+    if (!j) return;
+    const files = j.files.map((f, i) => (i === idx ? { ...f, ...patch } : f));
+    const next = { ...current, [id]: { ...j, files } };
+    jobsRef.current = next;
+    setJobs(next);
   }, []);
 
   const removeJob = useCallback((id: string) => {
-    setJobs((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+    const next = { ...jobsRef.current };
+    delete next[id];
+    jobsRef.current = next;
+    setJobs(next);
   }, []);
 
   const uploadOne = useCallback(
@@ -182,7 +186,9 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
         onFileDone: opts.onFileDone,
         onAllDone: opts.onAllDone,
       };
-      setJobs((prev) => ({ ...prev, [opts.id]: job }));
+      const next = { ...jobsRef.current, [opts.id]: job };
+      jobsRef.current = next;
+      setJobs(next);
       // start after state set
       setTimeout(() => runQueue(opts.id), 0);
     },
