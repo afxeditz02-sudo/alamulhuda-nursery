@@ -9,7 +9,7 @@ export type JobFile = {
   name: string;
   size: number;
   uploaded: number;
-  status: "queued" | "uploading" | "paused" | "done" | "error";
+  status: "queued" | "uploading" | "paused" | "saving" | "done" | "error";
   url?: string;
   type: JobFileType;
   handle?: ResumableHandle;
@@ -95,17 +95,33 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
         const path = `${pathPrefix}/${Date.now()}-${idx}-${safeName}`;
 
         try {
+          let lastProgressAt = 0;
+          let lastProgressBytes = f.uploaded;
           const handle = await startResumableUpload(bucket, path, f.file, {
-            onProgress: (bytes) => patchFile(jobId, idx, { uploaded: bytes, status: "uploading" }),
+            onProgress: (bytes, total) => {
+              const now = Date.now();
+              const percentMoved = total > 0 ? ((bytes - lastProgressBytes) / total) * 100 : 0;
+              const shouldUpdate =
+                now - lastProgressAt > 500 ||
+                percentMoved >= 1 ||
+                bytes >= total;
+
+              if (!shouldUpdate) return;
+
+              lastProgressAt = now;
+              lastProgressBytes = bytes;
+              patchFile(jobId, idx, { uploaded: bytes, status: "uploading" });
+            },
             onError: (err) => {
               patchFile(jobId, idx, { status: "error", error: err.message });
               toast.error(`Upload failed: ${f.name} — ${err.message}`);
               resolve();
             },
             onSuccess: async (publicUrl) => {
-              patchFile(jobId, idx, { status: "done", uploaded: f.size, url: publicUrl });
+              patchFile(jobId, idx, { status: "saving", uploaded: f.size, url: publicUrl });
               const cb = jobsRef.current[jobId]?.onFileDone;
               if (cb) await cb({ ...f, status: "done", uploaded: f.size, url: publicUrl });
+              patchFile(jobId, idx, { status: "done", uploaded: f.size, url: publicUrl });
               resolve();
             },
           });
