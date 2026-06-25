@@ -206,7 +206,11 @@ const ProgrammesTab = () => {
   const renderJobCard = (job: UploadJob) => {
     const totalBytes = job.files.reduce((s, f) => s + f.size, 0) || 1;
     const uploadedBytes = job.files.reduce((s, f) => s + f.uploaded, 0);
-    const pct = Math.min(100, Math.round((uploadedBytes / totalBytes) * 100));
+    const rawPct = Math.min(100, Math.round((uploadedBytes / totalBytes) * 100));
+    const allDone = job.files.every((f) => f.status === "done");
+    // Cap at 99% until the server has finalized the save (onSuccess -> status "done")
+    const pct = allDone && job.status === "done" ? 100 : Math.min(rawPct, 99);
+    const finalizing = rawPct >= 100 && job.status !== "done";
     const speed = job.elapsedMs > 500 ? uploadedBytes / (job.elapsedMs / 1000) : 0;
     const remainingBytes = Math.max(0, totalBytes - uploadedBytes);
     const eta = speed > 0 ? formatDuration((remainingBytes / speed) * 1000) : "—";
@@ -215,19 +219,20 @@ const ProgrammesTab = () => {
       <div key={job.id} className="rounded-lg border-2 border-primary/40 bg-primary/5 p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-semibold text-primary">
-            Uploading .... {pct}%
+            {job.status === "done" ? `Completed · 100%` : finalizing ? `Finalizing on server…` : `Uploading .... ${pct}%`}
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" /> {formatDuration(job.elapsedMs)}
           </div>
         </div>
         <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-          <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+          <div className={`h-full bg-primary transition-all ${finalizing ? "animate-pulse" : ""}`} style={{ width: `${pct}%` }} />
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{formatBytes(uploadedBytes)} / {formatBytes(totalBytes)}</span>
-          <span>{job.status === "uploading" && speed > 0 ? `${formatBytes(speed)}/s · ETA ${eta}` : job.status === "paused" ? "Paused" : ""}</span>
+          <span>{finalizing ? "Saving…" : job.status === "uploading" && speed > 0 ? `${formatBytes(speed)}/s · ETA ${eta}` : job.status === "paused" ? "Paused" : ""}</span>
         </div>
+
         <div className="flex gap-2 pt-1">
           {job.status === "uploading" ? (
             <Button variant="outline" size="sm" onClick={() => pauseJob(job.id)}>
