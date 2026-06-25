@@ -208,30 +208,37 @@ const ProgrammesTab = () => {
     const uploadedBytes = job.files.reduce((s, f) => s + f.uploaded, 0);
     const rawPct = Math.min(100, Math.round((uploadedBytes / totalBytes) * 100));
     const allDone = job.files.every((f) => f.status === "done");
-    // Cap at 99% until the server has finalized the save (onSuccess -> status "done")
-    const pct = allDone && job.status === "done" ? 100 : Math.min(rawPct, 99);
-    const finalizing = rawPct >= 100 && job.status !== "done";
-    const speed = job.elapsedMs > 500 ? uploadedBytes / (job.elapsedMs / 1000) : 0;
-    const remainingBytes = Math.max(0, totalBytes - uploadedBytes);
+    const saving = job.files.some((f) => f.status === "saving") || (rawPct >= 100 && job.status !== "done");
+    // Keep visible progress below 100 until media is saved into the programme row.
+    const pct = allDone && job.status === "done" ? 100 : Math.min(rawPct, 98);
+    const measuredBytes = job.files.reduce((s, f) => s + (f.status === "done" || f.status === "saving" ? f.size : f.uploaded), 0);
+    const speed = job.elapsedMs > 500 ? measuredBytes / (job.elapsedMs / 1000) : 0;
+    const remainingBytes = Math.max(0, totalBytes - measuredBytes);
     const eta = speed > 0 ? formatDuration((remainingBytes / speed) * 1000) : "—";
+    const uploadingFile = job.files.find((f) => f.status === "uploading" || f.status === "queued" || f.status === "paused" || f.status === "saving");
 
     return (
       <div key={job.id} className="rounded-lg border-2 border-primary/40 bg-primary/5 p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-semibold text-primary">
-            {job.status === "done" ? `Completed · 100%` : finalizing ? `Finalizing on server…` : `Uploading .... ${pct}%`}
+            {job.status === "done" ? `Completed · 100%` : saving ? `Saving file… ${pct}%` : `Uploading… ${pct}%`}
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" /> {formatDuration(job.elapsedMs)}
           </div>
         </div>
         <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-          <div className={`h-full bg-primary transition-all ${finalizing ? "animate-pulse" : ""}`} style={{ width: `${pct}%` }} />
+          <div className={`h-full bg-primary transition-all ${saving ? "animate-pulse" : ""}`} style={{ width: `${pct}%` }} />
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{formatBytes(uploadedBytes)} / {formatBytes(totalBytes)}</span>
-          <span>{finalizing ? "Saving…" : job.status === "uploading" && speed > 0 ? `${formatBytes(speed)}/s · ETA ${eta}` : job.status === "paused" ? "Paused" : ""}</span>
+          <span>{formatBytes(Math.min(measuredBytes, totalBytes))} / {formatBytes(totalBytes)}</span>
+          <span>{saving ? "Finalizing…" : job.status === "uploading" && speed > 0 ? `${formatBytes(speed)}/s · ETA ${eta}` : job.status === "paused" ? "Paused" : ""}</span>
         </div>
+        {uploadingFile && job.status !== "done" && (
+          <div className="text-[10px] text-muted-foreground truncate">
+            {uploadingFile.status === "saving" ? "Saving" : uploadingFile.status === "paused" ? "Paused" : "Uploading"}: {uploadingFile.name}
+          </div>
+        )}
 
         <div className="flex gap-2 pt-1">
           {job.status === "uploading" ? (

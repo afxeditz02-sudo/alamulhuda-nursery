@@ -9,7 +9,7 @@ export type JobFile = {
   name: string;
   size: number;
   uploaded: number;
-  status: "queued" | "uploading" | "paused" | "done" | "error";
+  status: "queued" | "uploading" | "paused" | "saving" | "done" | "error";
   url?: string;
   type: JobFileType;
   handle?: ResumableHandle;
@@ -63,24 +63,28 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
   }, []);
 
   const patchJob = useCallback((id: string, patch: Partial<UploadJob>) => {
-    setJobs((prev) => (prev[id] ? { ...prev, [id]: { ...prev[id], ...patch } } : prev));
+    const current = jobsRef.current;
+    if (!current[id]) return;
+    const next = { ...current, [id]: { ...current[id], ...patch } };
+    jobsRef.current = next;
+    setJobs(next);
   }, []);
 
   const patchFile = useCallback((id: string, idx: number, patch: Partial<JobFile>) => {
-    setJobs((prev) => {
-      const j = prev[id];
-      if (!j) return prev;
-      const files = j.files.map((f, i) => (i === idx ? { ...f, ...patch } : f));
-      return { ...prev, [id]: { ...j, files } };
-    });
+    const current = jobsRef.current;
+    const j = current[id];
+    if (!j) return;
+    const files = j.files.map((f, i) => (i === idx ? { ...f, ...patch } : f));
+    const next = { ...current, [id]: { ...j, files } };
+    jobsRef.current = next;
+    setJobs(next);
   }, []);
 
   const removeJob = useCallback((id: string) => {
-    setJobs((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+    const next = { ...jobsRef.current };
+    delete next[id];
+    jobsRef.current = next;
+    setJobs(next);
   }, []);
 
   const uploadOne = useCallback(
@@ -95,21 +99,40 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
         const path = `${pathPrefix}/${Date.now()}-${idx}-${safeName}`;
 
         try {
+          let lastProgressAt = 0;
+          let lastProgressBytes = f.uploaded;
           const handle = await startResumableUpload(bucket, path, f.file, {
-            onProgress: (bytes) => patchFile(jobId, idx, { uploaded: bytes, status: "uploading" }),
+            onProgress: (bytes, total) => {
+              const now = Date.now();
+              const percentMoved = total > 0 ? ((bytes - lastProgressBytes) / total) * 100 : 0;
+              const shouldUpdate =
+                now - lastProgressAt > 500 ||
+                percentMoved >= 1 ||
+                bytes >= total;
+
+              if (!shouldUpdate) return;
+
+              lastProgressAt = now;
+              lastProgressBytes = bytes;
+              patchFile(jobId, idx, { uploaded: bytes, status: "uploading" });
+            },
             onError: (err) => {
               patchFile(jobId, idx, { status: "error", error: err.message });
               toast.error(`Upload failed: ${f.name} — ${err.message}`);
               resolve();
             },
             onSuccess: async (publicUrl) => {
-              patchFile(jobId, idx, { status: "done", uploaded: f.size, url: publicUrl });
+              patchFile(jobId, idx, { status: "saving", uploaded: f.size, url: publicUrl });
               const cb = jobsRef.current[jobId]?.onFileDone;
               if (cb) await cb({ ...f, status: "done", uploaded: f.size, url: publicUrl });
+              patchFile(jobId, idx, { status: "done", uploaded: f.size, url: publicUrl });
               resolve();
             },
           });
-          patchFile(jobId, idx, { handle, status: "uploading" });
+          const latest = jobsRef.current[jobId]?.files[idx];
+          if (latest && latest.status !== "saving" && latest.status !== "done") {
+            patchFile(jobId, idx, { handle, status: "uploading" });
+          }
         } catch (e: any) {
           patchFile(jobId, idx, { status: "error", error: e?.message || "error" });
           resolve();
@@ -166,7 +189,9 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
         onFileDone: opts.onFileDone,
         onAllDone: opts.onAllDone,
       };
-      setJobs((prev) => ({ ...prev, [opts.id]: job }));
+      const next = { ...jobsRef.current, [opts.id]: job };
+      jobsRef.current = next;
+      setJobs(next);
       // start after state set
       setTimeout(() => runQueue(opts.id), 0);
     },
