@@ -129,7 +129,10 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
               resolve();
             },
           });
-          patchFile(jobId, idx, { handle, status: "uploading" });
+          const latest = jobsRef.current[jobId]?.files[idx];
+          if (latest && latest.status !== "saving" && latest.status !== "done") {
+            patchFile(jobId, idx, { handle, status: "uploading" });
+          }
         } catch (e: any) {
           patchFile(jobId, idx, { status: "error", error: e?.message || "error" });
           resolve();
