@@ -27,8 +27,15 @@ export async function startResumableUpload(
   file: File,
   cbs: UploadCallbacks
 ): Promise<ResumableHandle> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token || SUPABASE_KEY;
+  let { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    const refreshed = await supabase.auth.refreshSession();
+    session = refreshed.data.session;
+  }
+  if (!session?.access_token) {
+    throw new Error("You must be signed in to upload files. Please sign in again.");
+  }
+  const token = session.access_token;
 
   const upload = new tus.Upload(file, {
     endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
