@@ -35,44 +35,75 @@ export async function startResumableUpload(
   if (!session?.access_token) {
     throw new Error("You must be signed in to upload files. Please sign in again.");
   }
-  const token = session.access_token;
+  let token = session.access_token;
 
-  const upload = new tus.Upload(file, {
-    endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
-    retryDelays: [0, 1000, 3000, 5000, 10000],
-    headers: {
-      authorization: `Bearer ${token}`,
-      apikey: SUPABASE_KEY,
-      "x-upsert": "true",
-    },
-    uploadDataDuringCreation: true,
-    removeFingerprintOnSuccess: true,
-    metadata: {
-      bucketName: bucket,
-      objectName: objectPath,
-      contentType: file.type || "application/octet-stream",
-      cacheControl: "3600",
-    },
-    chunkSize: 6 * 1024 * 1024, // Supabase requires 6MB chunks
-    onError: (err) => cbs.onError?.(err as Error),
-    onProgress: (bytesUploaded, bytesTotal) => cbs.onProgress?.(bytesUploaded, bytesTotal),
-    onSuccess: () => {
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(objectPath);
-      cbs.onSuccess?.(publicUrl);
-    },
-  });
+  let retriedAuth = false;
+
+  const buildUpload = (authToken: string) =>
+    new tus.Upload(file, {
+      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+      retryDelays: [0, 1000, 3000, 5000, 10000, 20000],
+      headers: {
+        authorization: `Bearer ${authToken}`,
+        apikey: SUPABASE_KEY,
+        "x-upsert": "true",
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: bucket,
+        objectName: objectPath,
+        contentType: file.type || "application/octet-stream",
+        cacheControl: "3600",
+      },
+      chunkSize: 6 * 1024 * 1024, // Supabase requires 6MB chunks
+      onShouldRetry: (err: any) => {
+        const status = err?.originalResponse?.getStatus?.();
+        // Retry on network / 5xx / 401-403 (after refresh)
+        if (status === 401 || status === 403) return !retriedAuth;
+        if (!status || status >= 500) return true;
+        if (status === 409 || status === 423) return true;
+        return false;
+      },
+      onError: async (err: any) => {
+        const status = err?.originalResponse?.getStatus?.();
+        if ((status === 401 || status === 403) && !retriedAuth) {
+          retriedAuth = true;
+          try {
+            const refreshed = await supabase.auth.refreshSession();
+            const newToken = refreshed.data.session?.access_token;
+            if (newToken) {
+              token = newToken;
+              (uploadRef.upload as any).options.headers.authorization = `Bearer ${newToken}`;
+              uploadRef.upload.start();
+              return;
+            }
+          } catch { /* fallthrough */ }
+        }
+        cbs.onError?.(err as Error);
+      },
+      onProgress: (bytesUploaded, bytesTotal) => cbs.onProgress?.(bytesUploaded, bytesTotal),
+      onSuccess: () => {
+        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+        cbs.onSuccess?.(publicUrl);
+      },
+    });
+
+  const uploadRef = { upload: null as unknown as tus.Upload };
+  uploadRef.upload = buildUpload(token);
 
   // Resume previous upload if any
-  const prev = await upload.findPreviousUploads();
-  if (prev.length > 0) upload.resumeFromPreviousUpload(prev[0]);
-  upload.start();
+  const prev = await uploadRef.upload.findPreviousUploads();
+  if (prev.length > 0) uploadRef.upload.resumeFromPreviousUpload(prev[0]);
+  uploadRef.upload.start();
 
   return {
-    upload,
-    pause: () => upload.abort(),
-    resume: () => upload.start(),
+    upload: uploadRef.upload,
+    pause: () => uploadRef.upload.abort(),
+    resume: () => uploadRef.upload.start(),
     abort: async () => {
-      try { await upload.abort(true); } catch { /* noop */ }
+      try { await uploadRef.upload.abort(true); } catch { /* noop */ }
     },
   };
 }
+
