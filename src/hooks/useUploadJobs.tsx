@@ -145,13 +145,25 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
     async (jobId: string) => {
       const job = jobsRef.current[jobId];
       if (!job) return;
-      for (let i = 0; i < job.files.length; i++) {
-        // Stop if job was paused or removed
-        const current = jobsRef.current[jobId];
-        if (!current || current.status === "paused") return;
-        if (current.files[i].status === "done") continue;
-        await uploadOne(jobId, i);
-      }
+      const CONCURRENCY = 3;
+      const indices = job.files
+        .map((f, i) => (f.status === "done" ? -1 : i))
+        .filter((i) => i >= 0);
+
+      let cursor = 0;
+      const workers = Array.from({ length: Math.min(CONCURRENCY, indices.length) }, async () => {
+        while (true) {
+          const cur = jobsRef.current[jobId];
+          if (!cur || cur.status === "paused") return;
+          const myIdx = cursor++;
+          if (myIdx >= indices.length) return;
+          const fileIdx = indices[myIdx];
+          if (cur.files[fileIdx].status === "done") continue;
+          await uploadOne(jobId, fileIdx);
+        }
+      });
+      await Promise.all(workers);
+
       const final = jobsRef.current[jobId];
       if (final && final.files.every((f) => f.status === "done")) {
         patchJob(jobId, { status: "done", endedAt: Date.now() });
@@ -163,6 +175,7 @@ export const useUploadJobs = (bucket: string, pathPrefix: string) => {
     },
     [uploadOne, patchJob, removeJob]
   );
+
 
   const startJob = useCallback(
     (opts: {
