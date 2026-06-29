@@ -1,4 +1,4 @@
 project_id = "bppddfcpsddvevfsvxpz"
 
 [storage]
-file_size_limit = "100MiB"
+file_size_limit = "50GiB"
